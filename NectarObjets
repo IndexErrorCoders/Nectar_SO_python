@@ -1,0 +1,957 @@
+Understanding Python super() with __init__() methods
+
+
+class Base(object):
+    def __init__(self):
+        print "Base created"
+
+class ChildA(Base):
+    def __init__(self):
+        Base.__init__(self)
+
+class ChildB(Base):
+    def __init__(self):
+        super(ChildB, self).__init__()
+
+ChildA() 
+ChildB()
+
+super() lets you avoid referring to the base class explicitly,
+
+ which can be nice. But the main advantage comes with multiple inheritance, where all sorts
+
+ of fun stuff can happen.
+
+in Python 3.0: you can just say super().__init__() instead of
+ super(ChildB, self).__init__() which is quite a bit nicer.
+
+super().__init__(args) is good, but super(args) would have been better! 
+
+------------------------------------------------------------------------------------------------------
+
+
+
+How to know if an object has an attribute in Python ?
+
+>>> a = SomeClass()
+>>> a.someProperty = value
+>>> a.property
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: SomeClass instance has no attribute 'property'
+
+
+if hasattr(a, 'property'):
+    a.property
+
+
+try:
+    doStuff(a.property)
+except AttributeError:
+    otherStuff()
+... is preferred to:
+
+if hasattr(a, 'property'):
+    doStuff(a.property)
+else:
+    otherStuff()
+
+
+
+You can use hasattr() or catch AttributeError, but if you really just want the value of the attribute with a default
+ if it isn't there, the best option is just to use getattr():
+
+getattr(a, 'property', 'default value')
+------------------------------------------------------------------------------------------------------
+
+Getting the class name of an instance in Python ?
+
+
+>>> (5).__class__.__name__
+'int'
+>>> type(5).__name__
+'int'
+
+>>> class person(object):
+        def init(self,name):
+            self.name=name
+        def info(self)
+            print "My name is {0}, I am a {1}".format(self.name,self.__class__.__name__)
+>>> bob = person(name='Robert')
+>>> bob.info()
+My name is Robert, I am a person
+
+comment retrouver classe parente et grand parente sauf à la definir dans init ?
+
+------------------------------------------------------------------------------------------------------
+
+
+In Python, how do I determine if an object is iterable ?
+
+try:
+    some_object_iterator = iter(some_object)
+except TypeError, te:
+    print some_object, 'is not iterable'
+The iter built-in checks for the __iter__ method or in the case of strings the __getitem__ method. To check if an object is "list like" and not "string like" then the key is the attributes __getitem__ and __iter__:
+
+ In [9]: hasattr([1,2,3,4], '__iter__')
+ Out[9]: True
+ In [11]: hasattr((1,2,3,4), '__iter__')
+ Out[11]: True
+ In [12]: hasattr(u"hello", '__iter__')
+ Out[12]: False
+ In [14]: hasattr(u"hello", '__getitem__')
+ Out[14]: True
+
+//
+
+try:
+   _ = (e for e in my_object)
+except TypeError:
+   print my_object, 'is not iterable'
+
+//
+
+import collections
+
+if isinstance(e, collections.Iterable):
+    # e is iterable
+//
+
+import collections
+
+if isinstance(theElement, collections.Iterable):
+    # iterable
+else:
+    # not iterable
+------------------------------------------------------------------------------------------------------
+
+
+What's the canonical way to check for type in python ?
+
+To check if the type of o is exactly str:
+
+type(o) is str
+To check if o is an instance of str or any subclass of str (this would be the "canonical" way):
+
+isinstance(o, str)
+The following also works, and can be useful in some cases:
+
+issubclass(type(o), str)
+type(o) in ([str] + str.__subclasses__())
+See Built-in Functions in the Python Library Reference for relevant information.
+
+One more note: in this case, you may actually want to use:
+
+isinstance(o, basestring)
+because this will also catch Unicode strings (unicode is not a subclass of str; both str and unicode are subclasses of basestring).
+
+Alternatively, isinstance accepts a tuple of classes. This will return True if x is an instance of any subclass of any of (str, unicode):
+
+isinstance(o, (str, unicode))
+
+Of course, sometimes these nice abstractions break down and isinstance(obj, cls) is what you need. But use sparingly.
+
+------------------------------------------------------------------------------------------------------
+
+
+
+
+I want to send a datetime.datetime object in serialized form from Python using JSON and de-serialize 
+in JavaScript using JSON. What is the best way to do this?
+
+
+You can add the 'default' parameter to json.dumps to handle this:
+
+>>> dthandler = lambda obj: (
+...     obj.isoformat()
+...     if isinstance(obj, datetime.datetime)
+...     or isinstance(obj, datetime.date)
+...     else None)
+>>> json.dumps(datetime.datetime.now(), default=dthandler)
+'"2010-04-20T20:08:21.634121"'
+Which is ISO 8601 format.
+
+A more comprehensive default handler function:
+
+def handler(obj):
+    if hasattr(obj, 'isoformat'):
+        return obj.isoformat()
+    elif isinstance(obj, ...):
+        return ...
+    else:
+        raise TypeError, 'Object of type %s with value of %s is not JSON serializable' % (type(obj), repr(obj))
+
+//
+json.dump(datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+
+------------------------------------------------------------------------------------------------------
+
+How do I check if a variable exists in Python ?
+
+To check the existence of a local variable:
+
+if 'myVar' in locals():
+  # myVar exists.
+To check the existence of a global variable:
+
+if 'myVar' in globals():
+  # myVar exists.
+To check if an object has an attribute:
+
+if hasattr(obj, 'attr_name'):
+  # obj.attr_name exists.
+
+------------------------------------------------------------------------------------------------------
+
+What is a clean, pythonic way to have multiple constructors in Python ?
+
+you can't have multiple __init__ functions in a Python class. So what is a good way to solve this problem?
+
+Suppose I have an class called Cheese with the number_of_holes property. How can I have two ways of creating cheese-objects...
+
+one that takes a number of holes like this: parmesan = Cheese(num_holes = 15)
+and one that takes no arguments and just randomizes the number_of_holes property: gouda = Cheese()
+I can think of only one way to do this, but that seems kinda clunky:
+
+class Cheese():
+    def __init__(self, num_holes = 0):
+        if (num_holes == 0):
+            # randomize number_of_holes
+        else:
+            number_of_holes = num_holes
+What do you say? Is there a better way?
+
+//
+
+Actually None is much better for "magic" values:
+
+class Cheese():
+    def __init__(self, num_holes = None):
+        if(num_holes is None):
+            ...
+Now if you want complete freedom of adding more parameters:
+
+class Cheese():
+    def __init__(self, *args, **kwargs):
+        #args -- tuple of anonymous arguments
+        #kwargs -- dictionary of named arguments
+        self.num_holes = kwargs.get('num_holes',random_holes())
+
+//
+
+Using num_holes=None as the default is fine if you are going to have just __init__.
+
+If you want multiple, independent "constructors", you can provide these as class methods. These are usually called factory methods. In this case you could have the default for num_holes be 0.
+
+class Cheese(object):
+    def __init__(self, num_holes=0):
+        "defaults to a solid cheese"
+        self.number_of_holes = num_holes
+
+    @classmethod
+    def random(cls):
+        return cls(random(100))
+
+    @classmethod
+    def slightly_holey(cls):
+        return cls(random(33))
+
+    @classmethod
+    def very_holey(cls):
+        return cls(random(66, 100))
+Now create object like this:
+
+gouda = Cheese()
+emmentaler = Cheese.random()
+leerdammer = Cheese.slightly_holey()
+
+------------------------------------------------------------------------------------------------------
+
+Checking whether a variable is an integer or not ?
+
+>>> isinstance( <var>, int )
+
+------------------------------------------------------------------------------------------------------
+
+
+Convert Python dict to object ?
+
+I'm searching for an elegant way to convert a normal Python dict with some nested dicts to an object.
+
+For example:
+
+>>> d = {'a': 1, 'b': {'c': 2}, 'd': ["hi", {'foo': "bar"}]}
+Should be accessible in this way:
+
+>>> x = dict2obj(d)
+>>> x.a
+1
+>>> x.b.c
+2
+>>> x.d[1].foo
+bar
+
+==>
+
+>>> from collections import namedtuple
+>>> MyStruct = namedtuple('MyStruct', 'a b d')
+>>> s = MyStruct(a=1, b={'c': 2}, d=['hi'])
+>>> s
+MyStruct(a=1, b={'c': 2}, d=['hi'])
+>>> s.a
+1
+>>> s.b
+{'c': 2}
+>>> s.c
+>>> s.d
+['hi']
+The alternative (original answer contents) is:
+
+class Struct:
+    def __init__(self, **entries): 
+        self.__dict__.update(entries)
+Then, you can use:
+
+>>> args = {'a': 1, 'b': 2}
+>>> s = Struct(**args)
+>>> s
+<__main__.Struct instance at 0x01D6A738>
+>>> s.a
+1
+>>> s.b
+2
+
+------------------------------------------------------------------------------------------------------
+
+
+http://stackoverflow.com/questions/tagged/python?page=15&sort=votes&pagesize=15
+
+Python's use of __new__ and __init__?
+
+------------------------------------------------------------------------------------------------------- XXX
+ 
+How to make class iterable ?
+
+
+Iterator objects in python conform to the iterator protocol, which basically means they provide two methods: __iter__() and  next().
+ The __iter__ returns the iterator object and is implicitly called at the start of loops. The next() method returns the next value and is implicitly
+ called at each loop increment.  next() raises a StopIteration exception when there are no more value to return, which is implicitly captured by
+ looping constructs to stop iterating.
+
+Here's a simple example of a counter:
+
+class Counter:
+    def __init__(self, low, high):
+        self.current = low
+        self.high = high
+
+    def __iter__(self):
+        return self
+
+    def next(self): # Python 3: def __next__(self)
+        if self.current > self.high:
+            raise StopIteration
+        else:
+            self.current += 1
+            return self.current - 1
+
+
+for c in Counter(3, 8):
+    print c
+This will print:
+
+3
+4
+5
+6
+7
+8
+This is easier to write using a generator, as covered in a previous answer:
+
+def counter(low, high):
+    current = low
+    while current <= high:
+        yield current
+        current += 1
+
+for c in counter(3, 8):
+    print c
+The printed output will be the same. Under the hood, the generator object supports the iterator protocol and does something roughly similar
+
+ to the class Counter.
+
+//
+
+There are four ways to build an iterative function:
+
+create a generator (uses the yield keyword)
+use a generator expression (genexp)
+create an iterator (defines __iter__ and __next__ (or next in Python 2.x))
+create a function that Python can iterate over on its own (defines __getitem__)
+Examples:
+
+# generator
+def uc_gen(text):
+    for char in text:
+        yield char.upper()
+
+# generator expression
+def uc_genexp(text):
+    return (char.upper() for char in text)
+
+ # iterator protocol
+ class uc_iter():
+     def __init__(self, text):
+         self.text = text
+         self.index = 0
+     def __iter__(self):
+         return self
+     def __next__(self):
+         try:
+             result = self.text[self.index].upper()
+         except IndexError:
+             raise StopIteration
+         self.index += 1
+         return result
+
+ # getitem method
+ class uc_getitem():
+     def __init__(self, text):
+         self.text = text
+     def __getitem__(self, index):
+         result = self.text[index].upper()
+         return result
+To see all four methods in action:
+
+for iterator in uc_gen, uc_genexp, uc_iter, uc_getitem:
+    for ch in iterator('abcde'):
+        print ch,
+    print
+Which results in:
+
+A B C D E
+A B C D E
+A B C D E
+A B C D E
+
+------------------------------------------------------------------------------------------------------- 
+
+
+how to detect whether a python variable is a function ?
+
+>>> isinstance(x, function)
+But that gives me:
+
+Traceback (most recent call last):
+  File "<stdin>", line 1, in ?
+NameError: name 'function' is not defined
+The reason I picked that is because
+
+>>> type(x)
+<type 'function'>
+
+==>
+Just check if the object has a __call__ attribute. You can check this with:
+
+hasattr(obj, '__call__')
+
+//
+
+You can use types.FunctionType in an isinstance call.
+
+In [1]: import types
+In [2]: types.FunctionType
+Out[2]: <type 'function'>
+In [3]: def f(): pass
+   ...:
+In [4]: isinstance(f, types.FunctionType)
+Out[4]: True
+In [5]: isinstance(lambda x : None, types.FunctionType)
+Out[5]: True
+
+//
+
+>>> from inspect import isfunction
+>>> def f(): pass
+>>> isfunction(f)
+True
+>>> isfunction(lambda x: x)
+True
+
+//
+
+import collections
+isinstance(obj, collections.Callable)
+It seems this was chosen instead of the hasattr(x, '__call__') method because of http://bugs.python.org/issue7006.
+
+//
+
+The following should return a boolean:
+
+callable(x)
+------------------------------------------------------------------------------------------------------- 
+
+http://stackoverflow.com/questions/tagged/python?page=18&sort=votes&pagesize=15
+
+To display a value nicely, you can use the pprint module. The easiest way to dump all variables with it is to do
+
+import pprint
+
+pprint.pprint(globals())
+pprint.pprint(locals())
+
+//
+print vars(foo),vars(bar)
+//
+The closest thing to PHP's var_dump() is pprint() with the getmembers() function in the built-in inspect module:
+
+from inspect import getmembers
+from pprint import pprint
+pprint(getmembers(yourObj))
+-------------------------------------------------------------------------------------------------------
+
+Python: how to make a class JSON serializable ?
+
+How to make a class serializable?
+
+a simple class:
+
+class FileItem:
+    def __init__(self, fname):
+        self.fname = fname
+What should I do to be able to get output of:
+
+json.dumps()
+without an error (FileItem instance at ... is not JSON serializable)
+
+===>
+
+Do you have an idea about the expected output? For e.g. will this do?
+
+>>> f  = FileItem("/foo/bar")
+>>> magic(f)
+'{"fname": "/foo/bar"}'
+In that case you can merely call json.dumps(f.__dict__).
+
+If you want more customized output then you will have to subclass JSONEncoder and implement your own custom serialization.
+
+For a trivial example, see below.
+
+>>> from json import JSONEncoder
+>>> class MyEncoder(JSONEncoder):
+    def default(self, o):
+        return o.__dict__    
+
+>>> MyEncoder().encode(f)
+'{"fname": "/foo/bar"}'
+Then you pass this class into the json.dumps() method as cls kwarg:
+
+json.dumps(cls=MyEncoder)
+If you also want to decode then you'll have to supply a custom object_hook to the JSONDecoder class. For e.g.
+
+>>> def from_json(json_object):
+        if 'fname' in json_object:
+            return FileItem(json_object['fname'])
+>>> f = JSONDecoder(object_hook = from_json).decode('{"fname": "/foo/bar"}')
+>>> f
+<__main__.FileItem object at 0x9337fac>
+>>> 
+
+//
+
+Here is a simple solution for a simple feature:
+
+.to_JSON() Method
+
+Instead of a JSON serializable class, implement a serializer method:
+
+import json
+
+class Object:
+    def to_JSON(self):
+        return json.dumps(self, default=lambda o: o.__dict__, 
+            sort_keys=True, indent=4)
+So you just call it to serialize:
+
+me = Object()
+me.name = "Onur"
+me.age = 35
+me.dog = Object()
+me.dog.name = "Apollo"
+
+print(me.to_JSON())
+will output:
+
+{
+    "age": 35,
+    "dog": {
+        "name": "Apollo"
+    },
+    "name": "Onur"
+}
+
+//
+
+I like Onur's answer but would expand to include an optional toJSON() method for objects to serialize themselves:
+
+def dumper(obj):
+    try:
+        return obj.toJSON()
+    except:
+        return obj.__dict__
+print json.dumps(some_big_object, default=dumper, indent=2)
+
+//
+
+For more complex classes you could consider the tool jsonpickle:
+
+jsonpickle is a Python library for serialization and deserialization of complex Python objects
+ to and from JSON.
+
+The standard Python libraries for encoding Python into JSON, such as the stdlib’s json, simplejson,
+ and demjson, can only handle Python primitives that have a direct JSON equivalent (e.g. dicts, lists, 
+strings, ints, etc.). jsonpickle builds on top of these libraries and allows more complex data structures
+ to be serialized to JSON. jsonpickle is highly configurable and extendable–allowing the user to choose 
+the JSON backend and add additional backends.
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+How do I determine the size of an object in Python ?
+
+==>
+Just use the sys.getsizeof function 
+
+>>> import sys
+>>> x = 2
+>>> sys.getsizeof(x)
+14
+
+Using 64 bit Python 2.7 from the Anaconda distribution and guppy.hpy along with sys.getsizeof, I have determined the minimum size of the following objects, and note that sets and dicts preallocate space so empty ones don't grow again until after a set amount (which may vary by implementation of the language):
+
+Bytes  type        empty + scaling notes
+24     int         NA
+28     long        NA
+37     str         + 1 byte per additional character
+52     unicode     + 4 bytes per additional character
+56     tuple       + 8 bytes per additional item
+72     list        + 32 for first, 8 for each additional
+232    set         sixth item increases to 744; 22nd, 2280; 86th, 8424
+280    dict        sixth item increases to 1048; 22nd, 3352; 86th, 12568
+64     class inst  has a __dict__ attr, same scaling as dict above
+16     __slots__   class with slots has no dict, seems to store in 
+                   mutable tuple-like structure.
+120    func def    doesn't include default args and other attrs
+904    class def   has a proxy __dict__ structure for class attrs
+104    old class   makes sense, less stuff, has real dict though.
+
+------------------------------------------------------------------------------------------------------- 
+
+What does functools.wraps do ?
+
+
+When you use a decorator, you're replacing one function with another. In other words, if you have a decorator
+
+def logged(func):
+    def with_logging(*args, **kwargs):
+        print func.__name__ + " was called"
+        return func(*args, **kwargs)
+    return with_logging
+then when you say
+
+@logged
+def f(x):
+   """does some math"""
+   return x + x * x
+it's exactly the same as saying
+
+def f(x):
+    """does some math"""
+    return x + x * x
+f = logged(f)
+and your function f is replaced with the function with_logging. Unfortunately,
+ this means that if you then say
+
+print f.__name__
+it will print with_logging because that's the name of your new function. In fact, 
+if you look at the docstring for f, it will be blank because with_logging has no docstring,
+ and so the docstring you wrote won't be there anymore. Also, if you look at the pydoc result for
+ that function, it won't be listed as taking one argument x; instead it'll be listed 
+as taking *args and **kwargs because that's what with_logging takes.
+
+If using a decorator always meant losing this information about a function, it would be a 
+serious problem. That's why we have functools.wraps. This takes a function used in a decorator
+ and adds the functionality of copying over the function name, docstring, arguments list, etc. 
+And since wraps is itself a decorator, the following code does the correct thing:
+
+from functools import wraps
+def logged(func):
+    @wraps(func)
+    def with_logging(*args, **kwargs):
+        print func.__name__ + " was called"
+        return func(*args, **kwargs)
+    return with_logging
+
+@logged
+def f(x):
+   """does some math"""
+   return x + x * x
+
+print f.__name__  # prints 'f'
+print f.__doc__   # prints 'does some math'
+
+Yep, I prefer to avoid the decorator module since functools.wraps is part of the standard library and thus doesn't introduce another external dependency. But the decorator module does indeed solve the help problem, which hopefully functools.wraps someday will as well.
+
+//
+
+I very often use classes, rather than functions, for my decorators. I was having some trouble with this because an object won't have all the same attributes that are expected of a function. For example, an object won't have the attribute __name__. I had a specific issue with this that was pretty hard to trace where Django was reporting the error "object has no attribute '__name__'". Unfortunately, for class-style decorators, I don't believe that @wrap will do the job. I have instead created a base decorator class like so:
+
+class DecBase(object):
+    func = None
+
+    def __init__(self, func):
+        self.__func = func
+
+    def __getattribute__(self, name):
+        if name == "func":
+            return super(DecBase, self).__getattribute__(name)
+
+        return self.func.__getattribute__(name)
+
+    def __setattr__(self, name, value):
+        if name == "func":
+            return super(DecBase, self).__setattr__(name, value)
+
+        return self.func.__setattr__(name, value)
+This class proxies all the attribute calls over to the function that is being decorated. So, you can now create a simple decorator that checks that 2 arguments are specified like so:
+
+class process_login(DecBase):
+    def __call__(self, *args):
+        if len(args) != 2:
+            raise Exception("You can only specify two arguments")
+
+        return self.func(*args)
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+
+
+Is there a simple, elegant way to define Singletons in Python? 
+
+You can override the new method like this:
+
+class Singleton(object):
+    _instance = None
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Singleton, cls).__new__(
+                                cls, *args, **kwargs)
+        return cls._instance
+
+
+if __name__ == '__main__':
+    s1=Singleton()
+    s2=Singleton()
+    if(id(s1)==id(s2)):
+        print "Same"
+    else:
+        print "Different"
+
+//
+
+Here's my own implementation of singletons. All you have to do is decorate the class; to get the singleton, you then have to use the Instance method. Here's an example:
+
+   @Singleton
+   class Foo:
+       def __init__(self):
+           print 'Foo created'
+
+   f = Foo() # Error, this isn't how you get the instance of a singleton
+
+   f = Foo.Instance() # Good. Being explicit is in line with the Python Zen
+   g = Foo.Instance() # Returns already created instance
+
+   print f is g # True
+And here's the code:
+
+class Singleton:
+    """
+    A non-thread-safe helper class to ease implementing singletons.
+    This should be used as a decorator -- not a metaclass -- to the
+    class that should be a singleton.
+
+    The decorated class can define one `__init__` function that
+    takes only the `self` argument. Other than that, there are
+    no restrictions that apply to the decorated class.
+
+    To get the singleton instance, use the `Instance` method. Trying
+    to use `__call__` will result in a `TypeError` being raised.
+
+    Limitations: The decorated class cannot be inherited from.
+
+    """
+
+    def __init__(self, decorated):
+        self._decorated = decorated
+
+    def Instance(self):
+        """
+        Returns the singleton instance. Upon its first call, it creates a
+        new instance of the decorated class and calls its `__init__` method.
+        On all subsequent calls, the already created instance is returned.
+
+        """
+        try:
+            return self._instance
+        except AttributeError:
+            self._instance = self._decorated()
+            return self._instance
+
+    def __call__(self):
+        raise TypeError('Singletons must be accessed through `Instance()`.')
+
+    def __instancecheck__(self, inst):
+        return isinstance(inst, self._decorated)
+------------------------------------------------------------------------------------------------------- 
+
+Chain-calling parent constructors in python ?
+
+
+class A(object):
+    def __init__(self):
+        print "Constructor A was called"
+
+class B(A):
+    def __init__(self):
+        super(B,self).__init__()
+        print "Constructor B was called"
+
+class C(B):
+    def __init__(self):
+        super(C,self).__init__()
+        print "Constructor C was called"
+
+c = C()
+
+===>
+
+Python 3 includes an improved super() which allows use like this:
+
+super().__init__(args)
+
+------------------------------------------------------------------------------------------------------- 
+
+What are some common uses for Python decorators ? 
+
+
+I use decorators mainly for timing purposes
+
+def time_dec(func):
+
+  def wrapper(*arg):
+      t = time.clock()
+      res = func(*arg)
+      print func.func_name, time.clock()-t
+      return res
+
+  return wrapper
+
+
+@time_dec
+def myFunction(n):
+    ...
+
+//
+
+I use decorators for type checking parameters which are passed to my Python methods via some RMI. So instead of repeating the same parameter 
+counting, exception-raising mumbo-jumbo again and again
+
+def accepts(ID, name):
+    if not (myIsType(ID, 'uint') and myIsType(name, 'utf8string')):
+        raise BlaBlaException() ...
+I just declare
+
+@accepts(uint, utf8string)
+def myMethod(ID, name):
+    ...
+and accepts() does all the work for me.
+
+//
+
+The Twisted library uses decorators combined with generators to give the illusion that an asynchronous function is synchronous. 
+For example:
+
+@inlineCallbacks
+def asyncf():
+    doStuff()
+    yield someAsynchronousCall()
+    doStuff()
+    yield someAsynchronousCall()
+    doStuff()
+Using this, code that would have been broken up into a ton of little callback functions can be written quite naturally as a single block,
+ making it a lot easier to understand and maintain.
+
+
+------------------------------------------------------------------------------------------------------- 
+
+How to print a class or objects of class using print() ?
+
+I am learning the ropes in Python. When I try to print an object of class Foobar using the print() function, I get an output like this:
+
+<__main__.Foobar instance at 0x7ff2a18c>
+
+>>> class Test:
+...     def __repr__(self):
+...         return "Test()"
+...     def __str__(self):
+...         return "member of Test"
+... 
+>>> t = Test()
+>>> t
+Test()
+>>> print t
+member of Test
+
+
+The __str__ method is what happens when you print it, and the __repr__ method is what happens when you use the repr() function
+ (or when you look at it with the interactive prompt). If this isn't the most Pythonic method, I apologize, because I'm still learning too - but it works.
+
+If no __str__ method is given, Python will print the result of __repr__ instead. If you define __str__ but not __repr__, Python will use 
+what you see above as the __repr__, but still use __str__ for printing.
+
+//
+
+class Test:
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+    def __repr__(self):
+        return "<Test a:%s b:%s>" % (self.a, self.b)
+
+    def __str__(self):
+        return "From str method of Test: a is %s, b is %s" % (self.a, self.b)
+..it will act the following way in the Python shell:
+
+>>> t = Test(123, 456)
+>>> t
+<Test a:123 b:456>
+>>> print repr(t)
+<Test a:123 b:456>
+>>> print t
+From str method of Test: a is 123, b is 456
+>>> print str(t)
+From str method of Test: a is 123, b is 456
+If no __str__ method is defined, print t (or print str(t)) will use the result of __repr__ instead
+
+If no __repr__ method is defined then the default is used, which is pretty much equivalent to..
+
+def __repr__(self):
+    return "<%s instance at %s>" % (self.__class__.__name__, id(self))
+
+------------------------------------------------------------------------------------------------------- 
+
