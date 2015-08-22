@@ -1,0 +1,952 @@
+Explain Python's slice notation
+
+a[start:end] # items start through end-1
+a[start:]    # items start through the rest of the array
+a[:end]      # items from the beginning through end-1
+a[:]         # a copy of the whole array
+There is also the step value, which can be used with any of the above:
+
+a[start:end:step] # start through not past end, by step
+
+a[-1]    # last item in the array
+a[-2:]   # last two items in the array
+a[:-2]   # everything except the last two items
+Python is kind to the programmer if there are fewer items than you ask for. For example, if you ask for a[:-2] and a only contains one element, you get an empty list instead of an error. Sometimes you would prefer the error, so you have to be aware that this may happen.
+
+and a[::-1] to reverse a string
+
+
+The ASCII art diagram is helpful too for remembering how slices work:
+
+ +---+---+---+---+---+
+ | H | e | l | p | A |
+ +---+---+---+---+---+
+ 0   1   2   3   4   5
+-5  -4  -3  -2  -1
+
+
+
+>>> x = [1,2,3,4,5,6]
+>>> x[::-1]
+[6,5,4,3,2,1]
+Easy way to reverse sequences!
+
+And if you wanted, for some reason, every second item in the reversed sequence:
+
+>>> x = [1,2,3,4,5,6]
+>>> x[::-2]
+[6,4,2]
+
+
+
+------------------------------------------------------------------------------------------------------
+How do I randomly select an item from a list using Python?
+
+import random
+
+foo = ['a', 'b', 'c', 'd', 'e']
+print(random.choice(foo))
+------------------------------------------------------------------------------------------------------
+How do I sort a list of dictionaries by values of the dictionary in Python?
+
+I got a list of dictionaries and want that to be sorted by a value of that dictionary.
+
+This
+
+[{'name':'Homer', 'age':39}, {'name':'Bart', 'age':10}]
+sorted by name, should become
+
+[{'name':'Bart', 'age':10}, {'name':'Homer', 'age':39}]
+
+           
+
+	It may look cleaner using a key instead a cmp:
+
+newlist = sorted(list_to_be_sorted, key=lambda k: k['name']) 
+or as J.F.Sebastian and others suggested,
+
+from operator import itemgetter
+newlist = sorted(list_to_be_sorted, key=itemgetter('name')) 
+For completeness (as pointed out in comments by fitzgeraldsteele), add reverse=True to sort descending
+
+newlist = sorted(l, key=itemgetter('name'), reverse=True)
+
+------------------------------------------------------------------------------------------------------
+
+
+How do you remove duplicates from a list in Python whilst preserving order ?
+
+def f7(seq):
+    seen = set()
+    seen_add = seen.add
+    return [ x for x in seq if not (x in seen or seen_add(x))]
+//
+>>> from  more_itertools import unique_everseen
+>>> items = [1, 2, 0, 1, 3, 2]
+>>> list(unique_everseen(items))
+[1, 2, 0, 3]
+
+
+
+
+------------------------------------------------------------------------------------------------------
+
+Map two lists into a dictionary in Python ?
+
+>>> keys = ['a', 'b', 'c']
+>>> values = [1, 2, 3]
+>>> dictionary = dict(zip(keys, values))
+>>> print dictionary
+{'a': 1, 'b': 2, 'c': 3}
+
+------------------------------------------------------------------------------------------------------
+
+
+
+Is there any pythonic way to combine two dicts (adding values for keys that appear in both) ?
+
+>>> from collections import Counter
+>>> A = Counter({'a':1, 'b':2, 'c':3})
+>>> B = Counter({'b':3, 'c':4, 'd':5})
+>>> A + B
+Counter({'c': 7, 'b': 5, 'd': 5, 'a': 1})
+
+------------------------------------------------------------------------------------------------------
+
+http://stackoverflow.com/questions/tagged/python?page=13&sort=votes&pagesize=15
+
+How do you return multiple values in Python?
+def f(x):
+  y0 = x + 1
+  y1 = x * 3
+  y2 = y0 ** y3
+  return (y0,y1,y2)
+===>
+
+>>> import collections
+>>> point = collections.namedtuple('Point', ['x', 'y'])
+>>> p = point(1, y=2)
+>>> p.x, p.y
+1 2
+>>> p[0], p[1]
+1 2
+
+//
+
+def g(x):
+  y0 = x + 1
+  y1 = x * 3
+  y2 = y0 ** y3
+  return {'y0':y0, 'y1':y1 ,'y2':y2 }
+------------------------------------------------------------------------------------------------------
+
+
+In other languages I would use a switch or case statement, but Python does not appear to have a switch statement.
+ What are the recommended Python solutions in this scenario?
+
+
+You could use a dictionary:
+
+def f(x):
+    return {
+        'a': 1,
+        'b': 2,
+    }[x]
+
+
+If you'd like defaults you could use the dictionary get(key[, default]) method:
+
+def f(x):
+    return {
+        'a': 1,
+        'b': 2,
+    }.get(x, 9)    # 9 is default if x not found
+
+http://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
+
+I've always liked doing it this way
+
+result = {
+  'a': lambda x: x * 5,
+  'b': lambda x: x + 7,
+  'c': lambda x: x - 2
+}[value](x)
+
+------------------------------------------------------------------------------------------------------
+*args and **kwargs? 
+
+The syntax is the * and **. The names *args and **kwargs are only by convention but there's no hard requirement to use them.
+
+You would use *args when you're not sure how many arguments might be passed to your function, i.e. it allows you pass an arbitrary
+ number of arguments to your function. For example:
+
+>>> def print_everything(*args):
+        for count, thing in enumerate(args):
+...         print '{0}. {1}'.format(count, thing)
+...
+>>> print_everything('apple', 'banana', 'cabbage')
+0. apple
+1. banana
+2. cabbage
+Similarly, **kwargs allows you to handle named arguments that you have not defined in advance:
+
+>>> def table_things(**kwargs):
+...     for name, value in kwargs.items():
+...         print '{0} = {1}'.format(name, value)
+...
+>>> table_things(apple = 'fruit', cabbage = 'vegetable')
+cabbage = vegetable
+apple = fruit
+You can use these along with named arguments too. The explicit arguments get values first and then everything else is passed
+ to *args and **kwargs. The named arguments come first in the list. For example:
+
+def table_things(titlestring, **kwargs)
+You can also use both in the same function definition but *args must occur before **kwargs.
+
+You can also use the * and ** syntax when calling a function. For example:
+
+>>> def print_three_things(a, b, c):
+...     print 'a = {0}, b = {1}, c = {2}'.format(a,b,c)
+...
+>>> mylist = ['aardvark', 'baboon', 'cat']
+>>> print_three_things(*mylist)
+a = aardvark, b = baboon, c = cat
+As you can see in this case it takes the list (or tuple) of items and unpacks it. By this it matches them to the arguments in the function.
+ Of course, you could have a * both in the function definition and in the function call.
+
+
+One place where the use of *args and **kwargs is quite useful is for subclassing.
+
+class Foo(object):
+    def __init__(self, value1, value2):
+        # do something with the values
+        print value1, value2
+
+class MyFoo(Foo):
+    def __init__(self, *args, **kwargs):
+        # do something else, don't care about the args
+        print 'myfoo'
+        super(MyFoo, self).__init__(*args, **kwargs)
+This way you can extend the behaviour of the Foo class, without having to know too much about Foo. 
+This can be quite convenient if you are programming to an API which might change. MyFoo just passes all arguments to the Foo class.
+
+
+Here's an example that uses 3 different types of parameters.
+
+def func(required_arg, *args, **kwargs):
+    # required_arg is a positional-only parameter.
+    print required_arg
+
+    # args is a tuple of positional arguments,
+    # because the parameter name has * prepended.
+    if args: # If args is not empty.
+        print args
+
+    # kwargs is a dictionary of keyword arguments,
+    # because the parameter name has ** prepended.
+    if kwargs: # If kwargs is not empty.
+        print kwargs
+
+>>> func()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: func() takes at least 1 argument (0 given)
+
+>>> func("required argument")
+required argument
+
+>>> func("required argument", 1, 2, '3')
+required argument
+(1, 2, '3')
+
+>>> func("required argument", 1, 2, '3', keyword1=4, keyword2="foo")
+required argument
+(1, 2, '3')
+{'keyword2': 'foo', 'keyword1': 4}
+
+One case where *args and **kwargs are useful is when writing wrapper functions (such as decorators) that need to be able accept arbitrary arguments to pass through to the function being wrapped. For example, a simple decorator that prints the arguments and return value of the function being wrapped:
+
+def mydecorator( f ):
+   @functools.wraps( f )
+   def wrapper( *args, **kwargs ):
+      print "Calling f", args, kwargs
+      v = f( *args, **kwargs )
+      print "f returned", v
+      return v
+   return wrapper
+
+------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------------------------- 
+http://stackoverflow.com/questions/tagged/python?page=16&sort=votes&pagesize=15
+
+Flattening a shallow list in Python ?
+
+I tried to flatten such a list with a nested list comprehension, like this:
+
+[image for image in menuitem for menuitem in list_of_menuitems]
+But I get in trouble of the NameError variety there, because the name 'menuitem' is not defined.
+
+>>> list_of_menuitems = [['image00', 'image01'], ['image10'], []]
+>>> import itertools
+>>> chain = itertools.chain(*list_of_menuitems)
+>>> print(list(chain))
+['image00', 'image01', 'image10']
+
+//
+
+You almost have it! The way to do nested list comprehensions is to put the for statements in the same order as they would go in regular nested for statements.
+
+Thus, this
+
+for inner_list in outer_list:
+    for item in inner_list:
+        ...
+corresponds to
+
+[... for inner_list in outer_list for item in inner_list]
+So you want
+
+[image for menuitem in list_of_menuitems for image in menuitem]
+
+//
+
+def flatten(x):
+    result = []
+    for el in x:
+        if hasattr(el, "__iter__") and not isinstance(el, basestring):
+            result.extend(flatten(el))
+        else:
+            result.append(el)
+    return result
+
+------------------------------------------------------------------------------------------------------- 
+
+Fastest way to list all primes below N ?
+
+This is the best algorithm I could come up.
+
+def get_primes(n):
+    numbers = set(range(n, 1, -1))
+    primes = []
+    while numbers:
+        p = numbers.pop()
+        primes.append(p)
+        numbers.difference_update(set(range(p*2, n+1, p)))
+    return primes
+
+>>> timeit.Timer(stmt='get_primes.get_primes(1000000)', setup='import   get_primes').timeit(1)
+1.1499958793645562
+
+Can it be made even faster?
+
+This code has a flaw: Since numbers is an unordered set, there is no guarantee that numbers.pop() will remove the lowest number from the set. Nevertheless, it works (at least for me) for some input numbers:
+
+>>> sum(get_primes(2000000))
+142913828922L
+#That's the correct sum of all numbers below 2 million
+>>> 529 in get_primes(1000)
+False
+>>> 529 in get_primes(530)
+True
+
+==>  http://stackoverflow.com/questions/2068372/fastest-way-to-list-all-primes-below-n
+
+Timings were measured using the command:
+
+python -mtimeit -s"import primes" "primes.{method}(1000000)"
+
+
+-------------------------------------------------------------------------------------------------------
+
+
+What is the difference between dict.items() and dict.iteritems() ?
+
+
+It's part of an evolution.
+
+Originally, Python items() built a real list of tuples and returned that. That could potentially take a lot of extra memory.
+
+Then, generators were introduced to the language in general, and that method was reimplemented as an iterator-generator method named iteritems(). The original remains for backwards compatibility.
+
+One of Python 3’s changes is that  items() now return iterators, and a list is never fully built. The iteritems() method is also gone, since items() now works like iteritems() in Python 2.
+
+------------------------------------------------------------------------------------------------------- 
+
+How can I sort a dictionary by key ?
+
+In [1]: import collections
+
+In [2]: d = {2:3, 1:89, 4:5, 3:0}
+
+In [3]: od = collections.OrderedDict(sorted(d.items()))
+
+In [4]: od
+Out[4]: OrderedDict([(1, 89), (2, 3), (3, 0), (4, 5)])
+
+In [13]: for k, v in od.items(): print k, v
+   ....: 
+1 89
+2 3
+3 0
+4 5
+
+------------------------------------------------------------------------------------------------------- 
+
+List filtering: list comprehension vs. lambda + filter ?
+
+My code looked like this:
+
+my_list = [i for i in my_list if i.attribute == value]
+But then i thought, wouldn't it be better to write it like this?
+
+filter(lambda x: x.attribute == value, my_list)
+It's more readable, and if needed for performance the lambda could be taken out to gain something.
+
+Question is: are there any caveats in using the second way? Any performance difference? Am I missing the Pythonic Way™ entirely and should do it in yet another way (such as using itemgetter instead of the lambda)?
+===>
+
+The other option to consider is to use a generator instead of a list comprehension:
+
+def filterbyvalue(seq, value):
+   for el in seq:
+       if el.attribute==value: yield el
+------------------------------------------------------------------------------------------------------- 
+
+How to generate all permutations of a list in Python ?
+
+import itertools
+Permutation (order matters):
+
+print list(itertools.permutations([1,2,3,4], 2))
+[(1, 2), (1, 3), (1, 4),
+(2, 1), (2, 3), (2, 4),
+(3, 1), (3, 2), (3, 4),
+(4, 1), (4, 2), (4, 3)]
+Combination (order does NOT matter):
+
+print list(itertools.combinations('123', 2))
+[('1', '2'), ('1', '3'), ('2', '3')]
+Cartesian product (with several iterables):
+
+print list(itertools.product([1,2,3], [4,5,6]))
+[(1, 4), (1, 5), (1, 6),
+(2, 4), (2, 5), (2, 6),
+(3, 4), (3, 5), (3, 6)]
+Cartesian product (with one iterable and itself):
+
+print list(itertools.product([1,2], repeat=3))
+[(1, 1, 1), (1, 1, 2), (1, 2, 1), (1, 2, 2),
+(2, 1, 1), (2, 1, 2), (2, 2, 1), (2, 2, 2)]
+
+//
+
+import itertools
+itertools.permutations([1,2,3])
+(returned as a generator. Use list(permutations(l)) to return as a list.)
+
+------------------------------------------------------------------------------------------------------- 
+
+http://stackoverflow.com/questions/tagged/python?page=19&sort=votes&pagesize=15
+
+Is there a way to step between 0 and 1 by 0.1?
+
+I thought I could do it like the following, but it failed:
+
+for i in range(0, 1, 0.1):
+    print i
+
+===>
+>>> import numpy as np
+>>> np.arange(0,1,0.1)
+array([ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9])
+as well as the linspace function which lets you have control over what happens at the endpoint (non-trivial for floating point numbers when things won't always divide into the correct number of "slices"):
+
+>>> np.linspace(0,1,11)
+array([ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9,  1. ])
+>>> np.linspace(0,1,10,endpoint=False)
+array([ 0. ,  0.1,  0.2,  0.3,  0.4,  0.5,  0.6,  0.7,  0.8,  0.9])
+
+//
+
+[x * 0.1 for x in range(0, 10)]
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+Getting key with maximum value in dictionary ?
+
+==>
+
+You can use operator.itemgetter for that:
+
+import operator
+stats = {'a':1000, 'b':3000, 'c': 100}
+max(stats.iteritems(), key=operator.itemgetter(1))[0]
+And instead of building a new list in memory use stats.iteritems(). The key parameter to the max() function is a function that computes a key that is used to determine how to rank items.
+
+Please note that if you were to have another key-value pair 'd': 3000 that this method will only return one of the two even though they both have the maximum value.
+
+>>> import operator
+>>> stats = {'a':1000, 'b':3000, 'c': 100, 'd':3000}
+>>> max(stats.iteritems(), key=operator.itemgetter(1))[0]
+'b' 
+
+//
+max(stats, key=stats.get)
+//
+"stats.get" did not woked for me! operator.itemgetter(1) was better
+
+stats = {'a':1000, 'b':3000, 'c': 100}
+max(stats.iterkeys(), key=lambda k: stats[k])
+------------------------------------------------------------------------------------------------------- 
+
+Proper way to use **kwargs in Python ?
+
+What is the proper way to use **kwargs in Python when it comes to default values?
+
+kwargs returns a dictionary, but what is the best way to set default values, or is there one? Should I just access it as a dictionary? Use get function?
+
+class ExampleClass:
+    def __init__(self, **kwargs):
+        self.val = kwargs['val']
+        self.val2 = kwargs.get('val2')
+
+===>
+
+You can pass a default value to get() for keys that are not in the dictionary:
+
+self.val2 = kwargs.get('val2',"default value")
+However, if you plan on using a particular argument with a particular default value, why not use named arguments in the first place?
+
+def __init__(self, val2="default value", **kwargs):
+
+------------------------------------------------------------------------------------------------------- 
+
+If you need access to the index as you iterate through the string, use enumerate():
+
+>>> for i, c in enumerate('test'):
+...     print i, c
+... 
+0 t
+1 e
+2 s
+3 t
+
+-------------------------------------------------------------------------------------------------------
+
+Is there a simple way to delete a list element by value in python ?
+
+To remove an element's first occurrence in a list, simply use list.remove:
+
+>>> a = [1, 2, 3, 4]
+>>> a.remove(2) # 2 is not the position!
+>>> print a
+[1, 3, 4]
+Mind that it does not remove all occurrences of your element. Use a list comprehension for that
+
+>>> a = [1, 2, 3, 4, 2, 3, 4, 2, 7, 2]
+>>> a = [x for x in a if x != 2]
+>>> print a
+[1, 3, 4, 3, 4, 7]
+
+//
+
+Usually Python will throw an Exception if you tell it to do something it can't so you'll have to do either:
+
+if c in a:
+    a.remove(c)
+or:
+
+try:
+    a.remove(c)
+except ValueError:
+    pass
+------------------------------------------------------------------------------------------------------- 
+
+Python reverse / inverse a mapping
+
+Given a dictionary like so:
+
+map = { 'a': 1, 'b':2 }
+How can one invert this map to get:
+
+inv_map = { 1: 'a', 2: 'b' }
+
+===>
+
+inv_map = {v: k for k, v in map.items()}
+------------------------------------------------------------------------------------------------------- 
+
+http://stackoverflow.com/questions/tagged/python?page=21&sort=votes&pagesize=15
+
+How to sort a list of objects in Python, based on an attribute of the objects ?
+
+===>
+# To sort the list in place...
+ut.sort(key=lambda x: x.count, reverse=True)
+
+# To return a new list, use the sorted() built-in function...
+newlist = sorted(ut, key=lambda x: x.count, reverse=True)
+
+//
+
+A way that can be fastest, especially if your list has a lot of records, is to use operator.attrgetter("count"). However, this might run on an pre-operator version of Python, so it would be nice to have a fallback mechanism. You might want to do the following, then:
+
+try: import operator
+except ImportError: cmpfun= lambda x: x.count # use a lambda if no operator module
+else: cmpfun= operator.attrgetter("count") # use operator since it's faster than lambda
+
+ut.sort(key=cmpfun, reverse=True) # sort in-place
+------------------------------------------------------------------------------------------------------- 
+
+Flatten (an irregular) list of lists in Python ?
+
+==>
+
+def flatten(l):
+    for el in l:
+        if isinstance(el, collections.Iterable) and not isinstance(el, basestring):
+            for sub in flatten(el):
+                yield sub
+        else:
+            yield el
+
+I used the Iterable ABC added in 2.6.
+
+In Python 3, the basestring is no more, but you can use
+
+basestring = (str, bytes)
+
+//
+
+You could simply use the flatten function in the compiler.ast module.
+
+>>> from compiler.ast import flatten
+>>> flatten([0, [1, 2], [3, 4, [5, 6]], 7])
+[0, 1, 2, 3, 4, 5, 6, 7]
+
+
+------------------------------------------------------------------------------------------------------- 
+
+
+How do I use Python's itertools.groupby() ?
+
+After some experimentation, I've overcome my mental block. In retrospect, it's all obvious, but in the spirit of Stack Overflow, here's what I learned.
+
+As Sebastjan said, **you first have to sort your data. This is important.**
+
+The part I didn't get is that in the example construction
+
+groups = []
+uniquekeys = []
+for k, g in groupby(data, keyfunc):
+   groups.append(list(g))    # Store group iterator as a list
+   uniquekeys.append(k)
+"k" is the current grouping key, and "g" is an iterator that you can use to iterate over the group defined by that grouping key. In other words, the groupby iterator itself returns iterators. Here's an example of that, using clearer variable names:
+
+from itertools import groupby
+
+things = [("animal", "bear"), ("animal", "duck"), ("plant", "cactus"), ("vehicle", "speed boat"), ("vehicle", "school bus")]
+
+for key, group in groupby(things, lambda x: x[0]):
+    for thing in group:
+        print "A %s is a %s." % (thing[1], key)
+    print " "
+This will give you the output:
+
+A bear is a animal.
+A duck is a animal.
+
+A cactus is a plant.
+
+A speed boat is a vehicle. 
+A school bus is a vehicle.
+In this example, "things" is a list of tuples where the first item in each tuple is the group the second item belongs to. The groupby() function takes two arguments: (1) the data to group and (2) the function to group it with. Here, "lambda x: x[0]" tells groupby() to use the first item in each tuple as the grouping key.
+
+In the above "for" statement, groupby returns three (key, group iterator) pairs - once for each unique key. You can use the returned iterator to iterate over each individual item in that group.
+
+Here's a slightly different example with the same data, using a list comprehension:
+
+for key, group in groupby(things, lambda x: x[0]):
+    listOfThings = " and ".join([thing[1] for thing in group])
+    print key + "s:  " + listOfThings + "."
+This will give you the output:
+
+animals: bear and duck.
+plants: cactus.
+vehicles: speed boat and school bus.
+Python's pretty cool, no?
+
+//
+
+Can you show us your code?
+
+The example on the Python docs is quite straight forward:
+
+groups = []
+uniquekeys = []
+for k, g in groupby(data, keyfunc):
+    groups.append(list(g))      # Store group iterator as a list
+    uniquekeys.append(k)
+So in your case, data is a list of nodes, keyfunc is where the logic of your criteria function goes and then groupby() groups the data.
+ You must be careful to sort the data by the criteria before you call groupby or it won't work. groupby method actually just iterates through 
+a list and whenever the key changes it creates a new group.
+
+------------------------------------------------------------------------------------------------------- 
+
+Python: if/else in list comprehension ?
+
+
+==> 
+
+[ unicode(x.strip()) if x is not None else '' for x in row ]
+
+------------------------------------------------------------------------------------------------------- 
+
+
+Python - Intersection of two lists ?
+
+You don't need to define intersection. It's already a first-class part of set.
+
+>>> b1 = [1,2,3,4,5,9,11,15]
+>>> b2 = [4,5,6,7,8]
+>>> set(b1).intersection(b2)
+set([4, 5])
+
+//
+
+Pure list comprehension version
+
+>>> c1 = [1, 6, 7, 10, 13, 28, 32, 41, 58, 63]
+>>> c2 = [[13, 17, 18, 21, 32], [7, 11, 13, 14, 28], [1, 5, 6, 8, 15, 16]]
+>>> c1set = frozenset(c1)
+Flatten variant:
+
+>>> [n for lst in c2 for n in lst if n in c1set]
+[13, 32, 7, 13, 28, 1, 6]
+Nested variant:
+
+>>> [[n for n in lst if n in c1set] for lst in c2]
+[[13, 32], [7, 13, 28], [1, 6]]
+------------------------------------------------------------------------------------------------------- 
+
+
+A Transpose/Unzip Function in Python (inverse of zip) ?
+
+For example:
+
+original = [('a', 1), ('b', 2), ('c', 3), ('d', 4)]
+# and I want to become...
+result = (['a', 'b', 'c', 'd'], [1, 2, 3, 4])
+
+===>
+
+zip is its own inverse! Provided you use the special * operator.
+
+>>> zip(*[('a', 1), ('b', 2), ('c', 3), ('d', 4)])
+[('a', 'b', 'c', 'd'), (1, 2, 3, 4)]
+The way this works is by calling zip with the arguments:
+
+zip(('a', 1), ('b', 2), ('c', 3), ('d', 4))
+… except the arguments are passed to zip directly (after being converted to a tuple), so there's no need
+ to worry about the number of arguments getting too big.
+
+------------------------------------------------------------------------------------------------------- 
+
+What is the most “pythonic” way to iterate over a list in chunks?
+
+Modified from the recipes section of Python's itertools docs:
+
+def grouper(iterable, n, fillvalue=None):
+    args = [iter(iterable)] * n
+    return izip_longest(*args, fillvalue=fillvalue)
+Example
+In pseudocode to keep the example terse.
+
+grouper('ABCDEFG', 3, 'x') --> 'ABC' 'DEF' 'Gxx'
+
+//
+
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in xrange(0, len(seq), size))
+Simple. Easy. Fast. Works with any sequence:
+
+text = "I am a very, very helpful text"
+
+for group in chunker(text, 7):
+   print repr(group),
+# 'I am a ' 'very, v' 'ery hel' 'pful te' 'xt'
+
+print '|'.join(chunker(text, 10))
+# I am a ver|y, very he|lpful text
+
+animals = ['cat', 'dog', 'rabbit', 'duck', 'bird', 'cow', 'gnu', 'fish']
+
+for group in chunker(animals, 3):
+    print group
+# ['cat', 'dog', 'rabbit']
+# ['duck', 'bird', 'cow']
+# ['gnu', 'fish']
+
+------------------------------------------------------------------------------------------------------- 
+
+
+Does Python have an ordered set ?
+
+There is an ordered set recipe for this which is referred to from the Python Documentation. This runs on Py2.6 or later and 3.0 or later without any modifications. The interface is almost exactly the same as a normal set, except that initialisation should be done with a list.
+
+OrderedSet([1, 2, 3])
+This is a MutableSet, so the signature for .union doesn't match that of set, but since it includes __or__ something similar can easily be added:
+
+@staticmethod
+def union(*sets):
+    union = OrderedSet()
+    union.union(*sets)
+    return union
+
+def union(self, *sets):
+    for set in sets:
+        self |= set
+
+
+//
+
+An ordered set is functionally a special case of an ordered dictionary.
+
+The keys of a dictionary are unique. Thus, if one disregards the values in an ordered dictionary (e.g. by assigning them None), then one has essentially an ordered set.
+
+As of Python 3.1 there is collections.OrderedDict. The following is an example implementation of an OrderedSet. (Note that only few methods need to be defined or overridden: collections.OrderedDict and collections.MutableSet do the heavy lifting.)
+
+import collections
+
+class OrderedSet(collections.OrderedDict, collections.MutableSet):
+
+    def update(self, *args, **kwargs):
+        if kwargs:
+            raise TypeError("update() takes no keyword arguments")
+
+        for s in args:
+            for e in s:
+                 self.add(e)
+
+    def add(self, elem):
+        self[elem] = None
+
+    def discard(self, elem):
+        self.pop(elem, None)
+
+    def __le__(self, other):
+        return all(e in other for e in self)
+
+    def __lt__(self, other):
+        return self <= other and self != other
+
+    def __ge__(self, other):
+        return all(e in self for e in other)
+
+    def __gt__(self, other):
+        return self >= other and self != other
+
+    def __repr__(self):
+        return 'OrderedSet([%s])' % (', '.join(map(repr, self.keys())))
+
+    def __str__(self):
+        return '{%s}' % (', '.join(map(repr, self.keys())))
+
+    difference = property(lambda self: self.__sub__)
+    difference_update = property(lambda self: self.__isub__)
+    intersection = property(lambda self: self.__and__)
+    intersection_update = property(lambda self: self.__iand__)
+    issubset = property(lambda self: self.__le__)
+    issuperset = property(lambda self: self.__ge__)
+    symmetric_difference = property(lambda self: self.__xor__)
+    symmetric_difference_update = property(lambda self: self.__ixor__)
+    union = property(lambda self: self.__or__)
+
+-------------------------------------------------------------------------------------------------------
+
+Shuffling a list of objects in python ?
+
+random.shuffle should work. Here's an example, where the objects are lists:
+
+from random import shuffle
+x = [[i] for i in range(10)]
+shuffle(x)
+
+# print x  gives  [[9], [2], [7], [0], [4], [5], [3], [1], [8], [6]]
+# of course your results will vary
+Note that shuffle works in place, and returns None.
+
+------------------------------------------------------------------------------------------------------- 
+
+How to define two-dimensional array in python ?
+
+You're technically trying to index an uninitialized array. You have to first initialize the outer list with lists before adding items:
+
+# Creates a list containing 5 lists initialized to 0
+Matrix = [[0 for x in range(5)] for x in range(5)] 
+You can now add items to the list:
+
+Matrix[0][0] = 1
+Matrix[4][0] = 5
+
+print Matrix[0][0] # prints 1
+print Matrix[4][0] # prints 5
+
+//
+
+If you really want a matrix, you might be better off using numpy.
+
+>>> import numpy
+>>> numpy.zeros((5, 5))
+array([[ 0.,  0.,  0.,  0.,  0.],
+       [ 0.,  0.,  0.,  0.,  0.],
+       [ 0.,  0.,  0.,  0.,  0.],
+       [ 0.,  0.,  0.,  0.,  0.],
+       [ 0.,  0.,  0.,  0.,  0.]])
+>>> numpy.matrix([[1, 2],[3, 4]])
+matrix([[1, 2],
+        [3, 4]])
+Other ways (with output removed for compactness):
+
+>>> numpy.matrix('1 2; 3 4')
+>>> numpy.arange(25).reshape((5, 5))
+>>> numpy.array(range(25)).reshape((5, 5))
+>>> numpy.ndarray((5, 5))
+Note that many people recommend against using matrix since an array is more flexible, 
+but I thought I'd include it since we're talking about matrices.
+
+//
+
+Here is a shorter notation for initializing a list of lists:
+
+matrix = [[0]*5 for i in range(5)]
+Unfortunately shortening this to something like 5*[5*[0]] doesn't really work because you end up with 5 copies of the same list, so when you modify one of them they all change, for example:
+
+>>> matrix = 5*[5*[0]]
+>>> matrix
+[[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
+>>> matrix[4][4] = 2
+>>> matrix
+[[0, 0, 0, 0, 2], [0, 0, 0, 0, 2], [0, 0, 0, 0, 2], [0, 0, 0, 0, 2], [0, 0, 0, 0, 2]]
+
+------------------------------------------------------------------------------------------------------- 
+
+Check if a Python list item contains a string inside another string ?
+
+
+If you only want to check for the presence of an "abc" in any string in the list, you could try
+
+some_list = ['abc-123', 'def-456', 'ghi-789', 'abc-456']
+if any("abc" in s for s in some_list):
+    # whatever
+If you really want to get all the items containing "abc", use
+
+matching = [s for s in some_list if "abc" in s]
+
+-------------------------------------------------------------------------------------------------------
+
+
+
