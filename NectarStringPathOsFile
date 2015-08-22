@@ -1,0 +1,1483 @@
+http://stackoverflow.com/questions/tagged/python?sort=votes&pageSize=15
+****************
+
+How can I call an external command (as if I'd typed it at the Unix shell or Windows command prompt)
+ from within a Python script?
+
+
+	from subprocess import call
+call(["ls", "-l"])
+The advantage of subprocess vs system is that it is more flexible
+ (you can get the stdout, stderr, the "real" status code, better error handling, etc...). 
+I think os.system is deprecated, too, or will be:
+
+Here's a summary of the ways to call external programs and the advantages and disadvantages of each:
+
+os.system("some_command with args") passes the command and arguments to your system's shell. This is nice because you can actually run multiple commands at once in this manner and set up pipes and input/output redirection. For example,
+os.system("some_command < input_file | another_command > output_file")
+However, while this is convenient, you have to manually handle the escaping of shell characters such as spaces, etc. On the other hand, this also lets you run commands which are simply shell commands and not actually external programs.
+see documentation
+
+stream = os.popen("some_command with args") will do the same thing as os.system except that it gives you a file-like object that you can use to access standard input/output for that process. There are 3 other variants of popen that all handle the i/o slightly differently. If you pass everything as a string, then your command is passed to the shell; if you pass them as a list then you don't need to worry about escaping anything.
+see documentation
+
+The Popen class of the subprocess module. This is intended as a replacement for os.popen but has the downside of being slightly more complicated by virtue of being so comprehensive. For example, you'd say
+
+print subprocess.Popen("echo Hello World", shell=True, stdout=subprocess.PIPE).stdout.read()
+instead of
+
+print os.popen("echo Hello World").read()
+but it is nice to have all of the options there in one unified class instead of 4 different popen functions.
+see documentation
+
+The call function from the subprocess module. This is basically just like the Popen class and takes all of the same arguments, but it simply waits until the command completes and gives you the return code. For example:
+
+return_code = subprocess.call("echo Hello World", shell=True)  
+see documentation
+
+The os module also has all of the fork/exec/spawn functions that you'd have in a C program, but I don't recommend using them directly.
+
+The subprocess module should probably be what you use.
+
+Finally please be aware that for all methods where you pass the final command to be executed by the shell as a string and you are responsible for escaping it there are serious security implications if any part of the string that you pass can not be fully trusted (for example if a user is entering some/any part of the string). If unsure only use these methods with constants. To give you a hint of the implications consider this code
+
+print subprocess.Popen("echo %s " % user_input, stdout=PIPE).stdout.read()
+and imagine that the user enters "my mama didnt love me && rm -rf /".
+
+
+
+
+subprocess.call(['ping', 'localhost'])
+
+
+
+import os
+cmd = 'ls -al'
+os.system(cmd)
+
+------------------------------------------------------------------------------------------------------
+How do I check whether a file exists, using Python, without using a try statement?
+
+
+import os.path
+os.path.isfile(fname)
+
+
+import os.path
+os.path.exists(file_path)
+This returns True for both files and directories.
+
+Use os.path.isfile to test if it's a file specifically.
+
+try:
+    f = open(filepath)
+except IOError:
+    print 'Oh dear.'
+
+
+------------------------------------------------------------------------------------------------------
+How do I copy a file in Python ?
+
+
+shutil has many methods you can use. One of which is:
+
+copyfile(src, dst)
+Copy the contents of the file named src to a file named dst. The destination location must be writable; otherwise,
+ an IOError exception will be raised. If dst already exists, it will be replaced. Special files such as character
+ or block devices and pipes cannot be copied with this function. src and dst are path names given as strings.
+
+
+
+import shutil
+shutil.copy2('/dir/file.ext', '/new/dir/newname.ext')
+or
+
+shutil.copy2('/dir/file.ext', '/new/dir')
+copy2 is also often useful, it preserves the original modification and access info (mtime and atime) in the file metadata.
+
+------------------------------------------------------------------------------------------------------
+
+
+Python: read file line by line into array ?
+
+with open('filename') as f:
+    lines = f.readlines()
+or with stripping the newline character:
+
+lines = [line.rstrip('\n') for line in open('filename')]
+Editor's note: This answer's original whitespace-stripping command, line.strip(), as implied 
+by Janus Troelsen's comment, would remove all leading and trailing whitespace, not just the trailing \n.
+
+with open("file.txt", "r") as ins:
+    array = []
+    for line in ins:
+        array.append(line)
+
+
+This will yield an "array" of lines from the file.
+
+lines = tuple(open(filename, 'r'))
+
+If you want the \n included:
+
+with open(fname) as f:
+    content = f.readlines()
+If you do not want \n included:
+
+with open(fname) as f:
+    content = f.read().splitlines()
+
+
+This should encapsulate the open command.
+
+array = []
+with open("file.txt", "r") as f:
+  for line in f:
+    array.append(line)
+
+Here's one more option by using list comprehensions on files;
+
+lines = [line.rstrip() for line in open('file.txt')]
+
+
+
+
+------------------------------------------------------------------------------------------------------
+
+Calling a function of a module from a string with the function's name in Python ?
+
+
+Assuming module foo with method bar:
+
+import foo
+methodToCall = getattr(foo, 'bar')
+result = methodToCall()
+As far as that goes, lines 2 and 3 can be compressed to:
+
+result = getattr(foo, 'bar')()
+if that makes more sense for your use case. You can use getattr in this fashion on class instance bound methods, 
+module-level methods, class methods... the list goes on.
+
+
+hasattr or getattr can be used to determine if a function is defined. 
+I had a database mapping (eventType and handling functionName) and I wanted to make sure I never "forgot" to define an event handler in my python
+
+locals()["myfunction"]()
+or
+
+globals()["myfunction"]()
+locals returns a dictionary with a current local symbol table. globals returns a dictionary with global symbol table.
+
+
+
+import foo
+ m = foo
+func = getattr(m,'bar')
+func()
+
+------------------------------------------------------------------------------------------------------
+
+
+Reverse a string in Python ?
+
+>>> 'hello world'[::-1]
+'dlrow olleh'
+
+
+------------------------------------------------------------------------------------------------------
+
+
+GENERATION ALEATOIRE DE PLAQUES
+
+>>> import string
+>>> import random
+>>> def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+...    return ''.join(random.choice(chars) for _ in range(size))
+...
+>>> id_generator()
+'G5G74W'
+>>> id_generator(3, "6793YUIO")
+'Y3U'
+How does it work ?
+
+We import string, a module that contains sequences of common ASCII characters, and random, a module that deals with random generation.
+
+string.ascii_uppercase + string.digits just concatenates the list of characters representing uppercase ASCII chars and digits:
+
+>>> string.ascii_uppercase
+'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+>>> string.digits
+'0123456789'
+>>> string.ascii_uppercase + string.digits
+'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+ou tout simplement :
+
+''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(N))
+
+------------------------------------------------------------------------------------------------------
+
+How to convert string to lowercase in Python ?
+
+s = "Kilometer"
+print(s.lower())
+
+This doesn't work for non-english words in utf-8. In this case decode('utf-8') can help.
+
+>>> s='????????'
+>>> print s.lower()
+_en russe_
+>>> print s.decode('utf-8').lower()
+_en russe_
+
+http://stackoverflow.com/questions/6797984/how-to-convert-string-to-lowercase-in-python
+
+
+------------------------------------------------------------------------------------------------------
+
+
+
+http://stackoverflow.com/questions/tagged/python?page=6&sort=votes&pagesize=15
+
+How to print in Python without newline or space?
+
+print('.', end="")
+Or if you are having trouble with the buffer , you can do this:
+
+print('.',end="",flush=True)
+
+>>> print "." * 10
+..........
+
+>>> for i in range(10):
+...     print i,
+... else:
+...     print
+...
+0 1 2 3 4 5 6 7 8 9
+>>> 
+------------------------------------------------------------------------------------------------------
+
+How do you append to a file in Python ?
+
+
+with open("test.txt", "a") as myfile:
+    myfile.write("appended text")
+
+------------------------------------------------------------------------------------------------------
+How to trim whitespace (including tabs)?
+
+Whitespace on the both sides:
+
+s = "  \t a string example\t  "
+s = s.strip()
+Whitespace on the right side:
+
+s = s.rstrip()
+Whitespace on the left side:
+
+s = s.lstrip()
+As thedz points out, you can provide an argument to strip arbitrary characters to any of these
+ functions like this:
+
+s = s.strip(' \t\n\r')
+This will strip any space, \t, \n, or \r characters from the left-hand side, right-hand side,
+ or both sides of the string.
+
+
+Python trim method is called strip:
+
+str.strip() #trim
+str.lstrip() #ltrim
+str.rstrip() #rtrim
+
+------------------------------------------------------------------------------------------------------
+
+How can I find all files in directory with the extension .txt in python ?
+
+You can use glob:
+
+import glob, os
+os.chdir("/mydir")
+for file in glob.glob("*.txt"):
+    print(file)
+or simply os.listdir:
+
+import os
+for file in os.listdir("/mydir"):
+    if file.endswith(".txt"):
+        print(file)
+or if you want to traverse directory, use os.walk:
+
+import os
+for root, dirs, files in os.walk("/mydir"):
+    for file in files:
+        if file.endswith(".txt"):
+             print(os.path.join(root, file))
+
+
+>>> import os
+>>> path = '/usr/share/cups/charmaps'
+>>> text_files = [f for f in os.listdir(path) if f.endswith('.txt')]
+>>> text_files
+['euc-cn.txt', 'euc-jp.txt', 'euc-kr.txt', 'euc-tw.txt', ... 'windows-950.txt']
+
+------------------------------------------------------------------------------------------------------
+
+
+Nicest way to pad zeroes to string
+
+>>> n = '4'
+>>> print n.zfill(3)
+>>> '004'
+------------------------------------------------------------------------------------------------------
+How to flush output of Python print?
+
+
+import sys
+sys.stdout.flush()
+
+//
+
+print(*objects, sep=' ', end='\n', file=sys.stdout, flush=False)
+
+------------------------------------------------------------------------------------------------------
+
+
+http://stackoverflow.com/questions/tagged/python?page=6&sort=votes&pagesize=15
+
+Find current directory and file's directory ?
+
+os.path.dirname(os.path.realpath(__file__))
+
+To find the path of the current file you can use the os module (os.path in particular) and os.path.realpath(__file__). 
+To get the path of another file replace __file__ with the path of the file you wish to execute to determine its location.
+
+Current Working Directory: os.getcwd()
+
+And the __file__ attribute can help you find out where the file you are executing is located
+
+//
+
+You may find this useful as a reference:
+
+import os
+
+print("Path at terminal when executing this file")
+print(os.getcwd() + "\n")
+
+print("This file path, relative to os.getcwd()")
+print(__file__ + "\n")
+
+print("This file full path (following symlinks)")
+full_path = os.path.realpath(__file__)
+print(full_path + "\n")
+
+print("This file directory and name")
+path, file = os.path.split(full_path)
+print(path + ' --> ' + file + "\n")
+
+print("This file directory only")
+print(os.path.dirname(full_path))
+
+//
+
+To get the current directory folder name alone
+
+    >>import os
+    >>str1=os.getcwd()
+    >>str2=str1.split('\\')
+    >>n=len(str2)
+    >>print str2[n-1]
+
+
+dirname, filename = os.path.split(os.path.abspath(__file__))
+
+------------------------------------------------------------------------------------------------------
+
+Extracting extension from filename in Python ?
+
+Use os.path.splitext:
+
+>>> import os
+>>> filename, file_extension = os.path.splitext('/path/to/somefile.ext')
+>>> filename
+'/path/to/somefile'
+>>> file_extension
+'.ext'
+
+
+One option may be splitting from dot:
+
+>>> filename = "example.jpeg"
+>>> filename.split(".")[-1]
+'jpeg'
+No error when file doesn't have an extension:
+
+>>> "filename".split(".")[-1]
+'filename'
+But you must be careful:
+
+>>> "png".split(".")[-1]
+'png'    # But file doesn't have an extension
+
+
+//
+filename='ext.tar.gz'
+extension = filename[filename.rfind('.'):]
+
+
+------------------------------------------------------------------------------------------------------
+
+
+ASCII value of a character in Python ?
+
+
+
+>>> ord('a')
+97
+>>> chr(97)
+'a'
+>>> chr(ord('a') + 3)
+'d'
+>>>
+There is also the unichr function, returning the Unicode character whose ordinal is the unichr argument:
+
+>>> unichr(97)
+u'a'
+>>> unichr(1234)
+u'\u04d2'
+------------------------------------------------------------------------------------------------------
+How can I get a list of locally installed Python modules ?
+
+
+help('modules')
+//
+I just use this to see currently used modules:
+
+import sys as s
+s.modules.keys()
+which shows all modules running on your python.
+
+For all built-in modules use:
+
+s.modules
+Which is a dict containing all modules and import objects.
+
+------------------------------------------------------------------------------------------------------
+
+
+How to get file creation & modification date/times in Python ?
+
+You have a couple of choices. For one, you can use the os.path.getmtime and os.path.getctime functions:
+
+import os.path, time
+print "last modified: %s" % time.ctime(os.path.getmtime(file))
+print "created: %s" % time.ctime(os.path.getctime(file))
+Your other option is to use os.stat:
+
+import os, time
+(mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(file)
+print "last modified: %s" % time.ctime(mtime)
+
+------------------------------------------------------------------------------------------------------
+
+How do I get a list of all files (and directories) in a given directory in Python ?
+
+This is a way to traverse every file and directory in a directory tree:
+
+import os
+
+for dirname, dirnames, filenames in os.walk('.'):
+    # print path to all subdirectories first.
+    for subdirname in dirnames:
+        print(os.path.join(dirname, subdirname))
+
+    # print path to all filenames.
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+    # Advanced usage:
+    # editing the 'dirnames' list will stop os.walk() from recursing into there.
+    if '.git' in dirnames:
+        # don't go into any .git directories.
+        dirnames.remove('.git')
+
+//
+
+os.listdir(path)
+//
+Here's a helper function I use quite often:
+
+import os
+
+def listdir_fullpath(d):
+    return [os.path.join(d, f) for f in os.listdir(d)]
+
+------------------------------------------------------------------------------------------------------
+
+How to access environment variables from Python?
+
+
+Environment variables are accessed through os.environ
+
+import os
+print os.environ['HOME']
+
+# using get will return `None` if a key is not present rather than raise a `KeyError`
+print os.environ.get('KEY_THAT_MIGHT_EXIST')
+
+# os.getenv is equivalent, and can also give a default value instead of `None`
+print os.getenv('KEY_THAT_MIGHT_EXIST', default_value)
+Python default installation on Windows is C:\Python. If you want to find out while running python you can do:
+
+import sys
+print sys.prefix
+------------------------------------------------------------------------------------------------------
+
+Limiting floats to two decimal points ?
+
+>>> a
+13.949999999999999
+
+>>> print("%.2f" % round(a,2))
+  13.95
+  >>> print("{0:.2f}".format(a))
+  13.95
+  >>> print("{0:.2f}".format(round(a,2)))
+  13.95
+  >>> print("{0:.15f}".format(round(a,2)))
+  13.949999999999999
+
+------------------------------------------------------------------------------------------------------
+
+How to get line count cheaply in Python ?
+
+def file_len(fname):
+    with open(fname) as f:
+        for i, l in enumerate(f):
+            pass
+    return i + 1
+is it possible to do any better?
+//
+One line, probably pretty fast:
+
+num_lines = sum(1 for line in open('myfile.txt'))
+
+------------------------------------------------------------------------------------------------------
+http://stackoverflow.com/questions/tagged/python?page=9&sort=votes&pagesize=15
+how-do-i-protect-python-code
+
+Terminating a Python script ?
+
+import sys
+sys.exit("some error message")
+
+Another way is:
+
+raise SystemExit
+
+#do stuff
+if this == that:
+  quit()
+------------------------------------------------------------------------------------------------------
+mkdir -p functionality in python ?
+In Python >=3.2, that's
+
+os.makedirs(path, exist_ok=True)
+
+------------------------------------------------------------------------------------------------------
+
+
+How do I remove/delete a folder that is not empty with Python ?
+
+I am getting an 'access is denied' error when I attempt to delete a folder that is not empty. I used the following command in my attempt: os.remove("/folder_name").
+
+What is the most effective way of removing/deleting a folder/directory that is not empty?
+
+import shutil
+
+shutil.rmtree('/folder_name')
+------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------
+
+Convert hex string to int in Python ?
+
+I may have it as "0xffff" or just "ffff"
+
+Without the 0x prefix, you need to specify the base explicitly, otherwise there's no way to tell:
+
+x = int("deadbeef", 16)
+With the 0x prefix, Python can distinguish hex and decimal automatically:
+
+>>> print int("0xdeadbeef", 0)
+3735928559
+>>> print int("10", 0)
+10
+//
+int(hexString, 16) does the trick, and works with and without the 0x prefix:
+
+>>> int("a", 16)
+10
+>>> int("0xa",16)
+10
+//
+For any given string s:
+
+int(s, 16)
+
+------------------------------------------------------------------------------------------------------
+
+Convert bytes to a Python string ?
+
+You need to decode the bytes object to produce a string:
+
+>>> b"abcde"
+b'abcde'
+
+# utf-8 is used here because it is a very common encoding, but you
+# need to use the encoding your data is actually in.
+>>> b"abcde".decode("utf-8") 
+'abcde'
+------------------------------------------------------------------------------------------------------
+
+How can I tell if a string repeats itself in Python ?
+
+Here's a concise solution which avoids regular expressions and slow in-Python loops:
+
+def principal_period(s):
+    i = (s+s).find(s, 1, -1)
+    return None if i == -1 else s[:i]
+
+//
+
+Here's a solution using regular expressions.
+
+import re
+
+REPEATER = re.compile(r"(.+?)\1+$")
+
+def repeated(s):
+    match = REPEATER.match(s)
+    return match.group(1) if match else None
+
+------------------------------------------------------------------------------------------------------
+
+
+How to find if directory exists in Python ?
+
+You're looking for os.path.isdir, or os.path.exists if you don't care whether it's a file or a directory.
+
+Example:
+
+import os
+print(os.path.isdir("/home/el"))
+print(os.path.exists("/home/el/myfile.txt"))
+------------------------------------------------------------------------------------------------------
+Is there a portable way to get the current username in Python ?
+
+>>> import getpass
+>>> getpass.getuser()
+'kostya'
+
+//
+import os
+import pwd
+
+def get_username():
+    return pwd.getpwuid( os.getuid() )[ 0 ]
+//
+ os.getlogin()
+//
+os.getenv('USERNAME')
+//
+>>> os.path.expanduser('~')
+'C:\\Documents and Settings\\johnsmith'
+------------------------------------------------------------------------------------------------------
+
+Parsing values from a JSON file in Python ?
+
+import json
+from pprint import pprint
+
+with open('data.json') as data_file:    
+    data = json.load(data_file)
+
+pprint(data)
+
+------------------------------------------------------------------------------------------------------
+
+
+how to check file size in python ?
+
+Use os.stat, and use the st_size member of the resulting object:
+
+>>> import os
+>>> statinfo = os.stat('somefile.txt')
+>>> statinfo
+(33188, 422511L, 769L, 1, 1032, 100, 926L, 1105022698,1105022732, 1105022732)
+>>> statinfo.st_size
+926L
+
+//
+
+>>> import os
+>>> b = os.path.getsize("/path/isa_005.mp3")
+>>> b
+2071611L
+
+//
+# f is a file-like object. 
+f.seek(0, os.SEEK_END)
+size = f.tell()
+
+------------------------------------------------------------------------------------------------------
+
+How do I “cd” in python ?
+
+os.chdir(path)
+//
+import subprocess # just to call an arbitrary command e.g. 'ls'
+
+# enter the directory like this:
+with cd("~/Library"):
+   # we are in ~/Library
+   subprocess.call("ls")
+
+# outside the context manager we are back wherever we started.
+//
+os.chdir("/path/to/change/to")
+By the way, if you need to figure out your current path, use os.getcwd()
+
+------------------------------------------------------------------------------------------------------
+
+Python - Split Strings with Multiple Delimiters ?
+
+"Hey, you - what are you doing here!?"
+should be
+
+['hey', 'you', 'what', 'are', 'you', 'doing', 'here']
+
+==>
+
+import re
+DATA = "Hey, you - what are you doing here!?"
+print re.findall(r"[\w']+", DATA)
+//
+>>> 'a;bcd,ef g'.replace(';',' ').replace(',',' ').split()
+['a', 'bcd', 'ef', 'g']
+
+//
+
+>>> import re
+>>> # Splitting on: , <space> - ! ? :
+>>> filter(None, re.split("[, \-!?:]+", "Hey, you - what are you doing here!?"))
+['Hey', 'you', 'what', 'are', 'you', 'doing', 'here']
+
+//
+
+import string
+punc = string.punctuation
+thestring = "Hey, you - what are you doing here!?"
+s = list(thestring)
+''.join([o for o in s if not o in punc]).split()
+------------------------------------------------------------------------------------------------------
+
+Use a Glob() to find files recursively in Python ?
+
+Use os.walk to recursively walk a directory and fnmatch.filter to match against a simple expression:
+
+import fnmatch
+import os
+
+matches = []
+for root, dirnames, filenames in os.walk('src'):
+  for filename in fnmatch.filter(filenames, '*.c'):
+    matches.append(os.path.join(root, filename))
+
+//
+
+import os, fnmatch
+
+
+def find_files(directory, pattern):
+    for root, dirs, files in os.walk(directory):
+        for basename in files:
+            if fnmatch.fnmatch(basename, pattern):
+                filename = os.path.join(root, basename)
+                yield filename
+
+
+for filename in find_files('src', '*.c'):
+    print 'Found C source:', filename
+-------------------------------------------------------------------------------------------------------
+
+Remove empty strings from a list of strings ?
+
+My idea looks like this:
+
+while '' in str_list:
+    str_list.remove('')
+
+===>
+
+I would use filter:
+
+str_list = filter(None, str_list) # fastest
+str_list = filter(bool, str_list) # fastest
+str_list = filter(len, str_list)  # a bit of slower
+str_list = filter(lambda item: item, str_list) # slower than list comprehension
+
+//
+
+strings = ["first", "", "second"]
+[x for x in strings if x]
+Output: ['first', 'second']
+-------------------------------------------------------------------------------------------------------
+
+In Python, how do I get a function name as a string without calling the function?
+
+def my_function():
+    pass
+
+print get_function_name_as_string(my_function) # my_function is not in quotes
+should output "my_function".
+
+==>
+
+my_function.__name__
+Using __name__ is the preferred method as it applies uniformly. Unlike func_name, it works on built-in functions as well:
+
+>>> import time
+>>> time.time.func_name
+Traceback (most recent call last):
+  File "<stdin>", line 1, in ?
+AttributeError: 'builtin_function_or_method' object has no attribute 'func_name'
+>>> time.time.__name__ 
+'time'
+Also the double underscores indicate to the reader this is a special attribute. 
+As a bonus, classes and modules have a __name__ attribute too, so you only have remember one special name.
+
+//
+
+import sys
+this_function_name = sys._getframe().f_code.co_name
+
+//
+
+my_function.func_name
+There are also other fun properties of functions. Type dir(func_name) to list them. func_name.func_code.co_code is the compiled function, stored as a string.
+
+import dis
+dis.dis(my_function)
+will display the code in almost human readable format. :)
+------------------------------------------------------------------------------------------------------- 
+
+Display number with leading zeros ?
+
+a = 1
+b = 10
+c = 100
+I want to display a leading zero for all numbers with less than 2 digits, i.e.:
+
+01
+10
+100
+
+==>
+
+Here you are:
+
+print "%02d" % (1,)
+
+//
+
+You can use zfill:
+
+print str(1).zfill(2) 
+print str(10).zfill(2) 
+print str(100).zfill(2) 
+
+-------------------------------------------------------------------------------------------------------
+
+How do I read a text file into a string variable in Python ?
+
+I use the following code segment to read a file in python
+
+with open ("data.txt", "r") as myfile:
+    data=myfile.readlines()
+input file is
+
+LLKKKKKKKKMMMMMMMMNNNNNNNNNNNNN
+GGGGGGGGGHHHHHHHHHHHHHHHHHHHHEEEEEEEE
+and when I print data I get
+
+['LLKKKKKKKKMMMMMMMMNNNNNNNNNNNNN\n', 'GGGGGGGGGHHHHHHHHHHHHHHHHHHHHEEEEEEEE']
+As I see data is in list form. How do I make it string. And also how do I remove "\n", "[", and "]" characters from it ?
+
+
+===>
+
+with open ("data.txt", "r") as myfile:
+    data=myfile.read().replace('\n', '')
+
+//
+
+use read(), not readline()
+
+data=myfile.read()
+
+//
+
+with open("data.txt") as myfile:
+    data="".join(line.rstrip() for line in myfile)
+
+------------------------------------------------------------------------------------------------------- 
+
+How to get an absolute file path in Python ?
+
+>>> import os
+>>> os.path.abspath("mydir/myfile.txt")
+
+//
+
+You could use the new Python 3.4 library pathlib. (You can also get it for Python 2.6 or 2.7 using pip install pathlib.) The authors wrote: "The aim of this library is to provide a simple hierarchy of classes to handle filesystem paths and the common operations users do over them."
+
+To get an absolute path in Windows:
+
+>>> from pathlib import Path
+>>> p = Path("pythonw.exe").resolve()
+>>> p
+WindowsPath('C:/Python27/pythonw.exe')
+>>> str(p)
+'C:\\Python27\\pythonw.exe'
+Or on UNIX:
+
+>>> from pathlib import Path
+>>> p = Path("python3.4").resolve()
+>>> p
+PosixPath('/opt/python3/bin/python3.4')
+>>> str(p)
+'/opt/python3/bin/python3.4'
+
+------------------------------------------------------------------------------------------------------- 
+
+How can I use Python to get the system hostname ?
+
+Both of these are pretty portable:
+
+import platform
+platform.node()
+
+import socket
+socket.gethostname()
+
+import os
+myhost = os.uname()[1]
+------------------------------------------------------------------------------------------------------- 
+
+Best way to strip punctuation from a string in Python ?
+
+exclude = set(string.punctuation)
+s = ''.join(ch for ch in s if ch not in exclude)
+This is faster than s.replace with each char, but won't perform as well as non-pure python approaches such as regexes or string.translate, as you can see from the below timings. For this type of problem, doing it at as low a level as possible pays off.
+
+Timing code:
+
+import re, string, timeit
+
+s = "string. With. Punctuation"
+exclude = set(string.punctuation)
+table = string.maketrans("","")
+regex = re.compile('[%s]' % re.escape(string.punctuation))
+
+def test_set(s):
+    return ''.join(ch for ch in s if ch not in exclude)
+
+def test_re(s):  # From Vinko's solution, with fix.
+    return regex.sub('', s)
+
+def test_trans(s):
+    return s.translate(table, string.punctuation)
+
+def test_repl(s):  # From S.Lott's solution
+    for c in string.punctuation:
+        s=s.replace(c,"")
+    return s
+
+print "sets      :",timeit.Timer('f(s)', 'from __main__ import s,test_set as f').timeit(1000000)
+print "regex     :",timeit.Timer('f(s)', 'from __main__ import s,test_re as f').timeit(1000000)
+print "translate :",timeit.Timer('f(s)', 'from __main__ import s,test_trans as f').timeit(1000000)
+print "replace   :",timeit.Timer('f(s)', 'from __main__ import s,test_repl as f').timeit(1000000)
+This gives the following results:
+
+sets      : 19.8566138744
+regex     : 6.86155414581
+translate : 2.12455511093
+replace   : 28.4436721802
+
+//
+
+myString.translate(None, string.punctuation)
+------------------------------------------------------------------------------------------------------- 
+
+Command Line Arguments In Python ?
+
+import sys
+
+print "\n".join(sys.argv)
+sys.argv is a list that contains all the arguments passed to the script on the command line.
+//
+
+Just going around evangelizing for argparse which is better
+http://argparse.googlecode.com/svn/trunk/doc/overview.html
+
+------------------------------------------------------------------------------------------------------- 
+
+How to print number with commas as thousands separators ?
+
+>>> import locale
+>>> locale.setlocale(locale.LC_ALL, 'en_US')
+'en_US'
+>>> locale.format("%d", 1255000, grouping=True)
+'1,255,000'
+
+I too, prefer the "simplest practical way". For >= 2.7:
+
+"{:,}".format(value)
+
+------------------------------------------------------------------------------------------------------- 
+
+How do I get the path and name of the file that is currently executing ?
+
+
+I have scripts calling other script files but I need to get the filepath of the file that is currently running within the process.
+
+For example, let's say I have three files. Using execfile:
+
+script_1.py calls script_2.py.
+In turn, script_2.py calls script_3.py.
+How can I get the file name and path of script_3.py, from code within script_3.py, without having to pass that information as arguments from script_2.py?
+
+(Executing os.getcwd() returns the original starting script's filepath not the current file's.)
+
+===>
+
+p1.py:
+
+execfile("p2.py")
+p2.py:
+
+import inspect, os
+print inspect.getfile(inspect.currentframe()) # script filename (usually with path)
+print os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))) # script directory
+
+//
+
+__file__
+as others have said. You may want to use:
+
+os.path.realpath(__file__)
+------------------------------------------------------------------------------------------------------- 
+
+Python: What OS am I running on ?
+
+>>> import os
+>>> print os.name
+posix
+>>> import platform
+>>> platform.system()
+'Linux'
+>>> platform.release()
+'2.6.22-15-generic'
+
+>>> import os
+>>> os.name
+'nt'
+>>> import platform
+>>> platform.system()
+'Windows'
+>>> platform.release()
+'Vista'
+------------------------------------------------------------------------------------------------------- 
+
+How to create a GUID in Python
+
+https://docs.python.org/3/library/uuid.html
+http://code.activestate.com/lists/python-list/72693/
+
+ uuid module is already included with the Python standard distribution.
+
+Ex:
+
+>>> import uuid
+>>> uuid.uuid1()
+UUID('5a35a426-f7ce-11dd-abd2-0017f227cfc7')
+
+Note that everyone now knows your MAC address: 00:17:f2:27:cf:c7. Unexpected right? –  
+    
+You can use uuid version 4 which is completely random and doesn't include your mac address. uuid.uuid4(). 
+------------------------------------------------------------------------------------------------------- 
+
+Converting from a string to boolean in Python ?
+
+===>
+
+Really, you just compare the string to whatever you expect to accept as representing true, 
+so you can do this:
+
+s == 'True'
+Or to checks against a whole bunch of values:
+
+s in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']
+Be cautious when using the following:
+
+>>> bool("foo")
+True
+>>> bool("")
+False
+Empty strings evaluate to False, but everything else evaluates to True. So this should not be 
+used for any kind of parsing purposes.
+
+//
+
+def str2bool(v):
+  return v.lower() in ("yes", "true", "t", "1")
+Then call it like so:
+
+str2bool("yes")
+> True
+
+str2bool("no")
+> False
+
+str2bool("stuff")
+> False
+
+str2bool("1")
+> True
+
+str2bool("0")
+> False
+
+//
+
+The JSON parser is also useful for in general converting strings to reasonable python types.
+
+>>> import json
+>>> json.loads("false")
+False
+>>> json.loads("true")
+True
+------------------------------------------------------------------------------------------------------- 
+
+Elegant Python function to convert CamelCase to camel_case ?
+
+>>> convert('CamelCase')
+'camel_case'
+
+To convert in the other direction, see this other stackoverflow question
+http://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-camel-case
+
+How can I simplify this conversion from underscore to camelcase in Python ?
+http://stackoverflow.com/questions/4303492/how-can-i-simplify-this-conversion-from-underscore-to-camelcase-in-python
+
+===>
+
+This is pretty thorough:
+
+def convert(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+Works with all these (and doesn't harm already-un-cameled versions):
+
+>>> convert('CamelCase')
+'camel_case'
+>>> convert('CamelCamelCase')
+'camel_camel_case'
+>>> convert('Camel2Camel2Case')
+'camel2_camel2_case'
+>>> convert('getHTTPResponseCode')
+'get_http_response_code'
+>>> convert('get2HTTPResponseCode')
+'get2_http_response_code'
+>>> convert('HTTPResponseCode')
+'http_response_code'
+>>> convert('HTTPResponseCodeXYZ')
+'http_response_code_xyz'
+Or if you're going to call it a zillion times, you can pre-compile the regexes:
+
+first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+all_cap_re = re.compile('([a-z0-9])([A-Z])')
+def convert(name):
+    s1 = first_cap_re.sub(r'\1_\2', name)
+    return all_cap_re.sub(r'\1_\2', s1).lower()
+Don't forget to import the regular expression module
+
+import re
+
+//
+
+There's an inflection library in the package index that can handle these things for you. In this case, you'd be looking for inflection.underscore():
+
+>>> inflection.underscore('CamelCase')
+'camel_case'
+
+------------------------------------------------------------------------------------------------------- 
+
+How to get the filename without the extension from a path in Python ?
+
+Just roll it:
+
+>>> base=os.path.basename('/root/dir/sub/file.ext')
+>>> base
+'file.ext'
+>>> os.path.splitext(base)
+('file', '.ext')
+>>> os.path.splitext(base)[0]
+'file'
+>>>
+------------------------------------------------------------------------------------------------------- 
+
+
+What is the common header format of Python files ?
+
+Its all metadata for the Foobar module.
+
+The first one is the docstring of the module, that is already explained in Peter's answer.
+
+How do I organize my modules (source files)? (Archive)
+
+The first line of each file shoud be #!/usr/bin/env python. This makes it possible to run the file as a script invoking the interpreter 
+implicitly, e.g. in a CGI context.
+
+Next should be the docstring with a description. If the description is long, the first line should be a short summary that makes sense on its own,
+ separated from the rest by a newline.
+
+All code, including import statements, should follow the docstring. Otherwise, the docstring will not be recognized by the interpreter,
+ and you will not have access to it in interactive sessions (i.e. through obj.__doc__) or when generating documentation with automated tools.
+
+Import built-in modules first, followed by third-party modules, followed by any changes to the path and your own modules. Especially, 
+additions to the path and names of your modules are likely to change rapidly: keeping them in one place makes them easier to find.
+
+Next should be authorship information. This information should follow this format:
+
+__author__ = "Rob Knight, Gavin Huttley, and Peter Maxwell"
+__copyright__ = "Copyright 2007, The Cogent Project"
+__credits__ = ["Rob Knight", "Peter Maxwell", "Gavin Huttley",
+                    "Matthew Wakefield"]
+__license__ = "GPL"
+__version__ = "1.0.1"
+__maintainer__ = "Rob Knight"
+__email__ = "rob@spot.colorado.edu"
+__status__ = "Production"
+Status should typically be one of "Prototype", "Development", or "Production". __maintainer__ should be the person who will fix bugs and make 
+improvements if imported. __credits__ differs from __author__ in that __credits__ includes people who reported bug fixes, made suggestions, etc. 
+but did not actually write the code.
+Here you have more information, listing __author__, __authors__, __contact__, __copyright__, __license__, __deprecated__, __date__ 
+and __version__ as recognized metadata.
+
+http://stackoverflow.com/questions/1523427/what-is-the-common-header-format-of-python-files
+
+------------------------------------------------------------------------------------------------------- 
+
+How to capitalize the first letter of each word in a string (Python) ?
+
+the 'title' method can't work well,
+
+>>> "they're bill's friends from the UK".title()
+"They'Re Bill'S Friends From The Uk"
+Try string.capwords,
+
+import string
+string.capwords("they're bill's friends from the UK")
+>>>"They're Bill's Friends From The Uk"
+
+------------------------------------------------------------------------------------------------------- 
+
+Convert a Unicode string to a string in Python (containing extra symbols) ?
+
+title = u"Klüft skräms inför på fédéral électoral große"
+import unicodedata
+unicodedata.normalize('NFKD', title).encode('ascii','ignore')
+'Kluft skrams infor pa federal electoral groe'
+
+You can use encode to ASCII if you don't need to translate the non-ASCII characters:
+
+>>> a=u"aaaàçççñññ"
+>>> type(a)
+<type 'unicode'>
+>>> a.encode('ascii','ignore')
+'aaa'
+>>> a.encode('ascii','replace')
+'aaa???????'
+
+-------------------------------------------------------------------------------------------------------
+
+How do I execute a program from python? os.system fails due to spaces in path ?
+
+subprocess.call will avoid problems with having to deal with quoting conventions of various shells. It accepts a list, rather than a string, so arguments are more easily delimited. i.e.
+
+import subprocess
+subprocess.call(['C:\\Temp\\a b c\\Notepad.exe', 'C:\\test.txt'])
+
+------------------------------------------------------------------------------------------------------- 
+
+Rename Files in Python ?
+
+I'm trying to rename some files in a directory using Python.
+
+Say I have a file called CHEESE_CHEESE_TYPE.*** and want to remove CHEESE_ so my resulting filename would be CHEESE_TYPE
+
+Do you want something like this?
+
+$ ls
+cheese_cheese_type.bar  cheese_cheese_type.foo
+$ python
+>>> import os
+>>> for filename in os.listdir("."):
+...  if filename.startswith("cheese_"):
+...    os.rename(filename, filename[7:])
+... 
+>>> 
+$ ls
+cheese_type.bar  cheese_type.foo
+
+//
+
+Here's a script based on your newest comment.
+
+#!/usr/bin/env python
+from os import rename, listdir
+
+badprefix = "cheese_"
+fnames = listdir('.')
+
+for fname in fnames:
+    if fname.startswith(badprefix*2):
+        rename(fname, fname.replace(badprefix, '', 1))
+
+//
+
+Assuming you are already in the directory, and that the "first 8 characters" from your comment hold true always. (Although "CHEESE_" is 7 characters... ? If so, change the 8 below to 7)
+
+from glob import glob
+from os import rename
+for fname in glob('*.prj'):
+    rename(fname, fname[8:])
+
+//
+
+import os
+import shutil
+
+for file in os.listdir(dirpath):
+    newfile = os.path.join(dirpath, file.split("_",1)[1])
+    shutil.move(os.path.join(dirpath,file),newfile)
+I'm assuming you don't want to remove the file extension, but you can just do the same split with periods.
+
+------------------------------------------------------------------------------------------------------- 
+
+Convert a list of characters into a string
+
+a = ['a','b','c','d']
+How do I convert it into a single string?
+
+>>> ''.join(a)
+'abcd'
+
+------------------------------------------------------------------------------------------------------- 
+
+Python remove all whitespace in a string ?
+
+If you want to remove leading and ending spaces, use str.strip() :
+
+sentence = ' hello  apple'
+sentence.strip()
+>>> 'hello  apple'
+If you want to remove all spaces, you can use str.replace():
+
+sentence = ' hello  apple'
+sentence.replace(" ", "")
+>>> 'helloapple'
+If you want to remove duplicated spaces, use the str.split():
+
+sentence = ' hello  apple'
+" ".join(sentence.split())
+>>> 'hello apple'
+
+------------------------------------------------------------------------------------------------------- 
+
+http://stackoverflow.com/questions/tagged/python?page=26&sort=votes&pagesize=15
+
+
+What is the best way to remove accents in a Python unicode string ?
+
+http://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string
+
+How about this:
+
+import unicodedata
+def strip_accents(s):
+   return ''.join(c for c in unicodedata.normalize('NFD', s)
+                  if unicodedata.category(c) != 'Mn')
+This works on greek letters, too:
+
+>>> strip_accents(u"A \u00c0 \u0394 \u038E")
+u'A A \u0394 \u03a5'
+>>> 
+Update:
+
+The character category "Mn" stands for Nonspacing_Mark, which is similar to unicodedata.combining in 
+MiniQuark's answer (I didn't think of unicodedata.combining, but it is probably the better solution,
+ because it's more explicit).
+
+And keep in mind, these manipulations may significantly alter the meaning of the text. Accents, Umlauts
+ etc. are not "decoration".
+
+------------------------------------------------------------------------------------------------------- 
+
+How to print the full traceback without halting the program ?
+
+traceback.format_exc() or sys.exc_info() will yield more info if thats what you want.
+
+import traceback
+import sys
+
+try:
+    do_stuff()
+except Exception, err:
+    print(traceback.format_exc())
+    #or
+    print(sys.exc_info()[0])
+
+//
+
+If you're debugging and just want to see the current stack trace, you can simply call:
+
+traceback.print_stack()
+
+There's no need to manually raise an exception just to catch it again.
+
+-------------------------------------------------------------------------------------------------------
+
+How to get full path of current file's directory in Python ?
+
+If you mean the directory of the script being run:
+
+import os
+os.path.dirname(os.path.abspath(__file__))
+If you mean the current working directory:
+
+import os
+os.getcwd()
+Note that before and after file is two underscores, not just one.
+
+abspath() is mandatory if you do not want to discover weird behaviours on windows, where dirname(file) may return an empty string!
+------------------------------------------------------------------------------------------------------- 
+
+
+
+
+
+
