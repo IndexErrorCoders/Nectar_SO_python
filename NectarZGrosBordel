@@ -1,0 +1,549 @@
+In other languages I would use a switch or case statement, but Python does not appear to have a switch statement.
+ What are the recommended Python solutions in this scenario?
+
+
+You could use a dictionary:
+
+def f(x):
+    return {
+        'a': 1,
+        'b': 2,
+    }[x]
+
+
+If you'd like defaults you could use the dictionary get(key[, default]) method:
+
+def f(x):
+    return {
+        'a': 1,
+        'b': 2,
+    }.get(x, 9)    # 9 is default if x not found
+
+http://stackoverflow.com/questions/60208/replacements-for-switch-statement-in-python
+
+I've always liked doing it this way
+
+result = {
+  'a': lambda x: x * 5,
+  'b': lambda x: x + 7,
+  'c': lambda x: x - 2
+}[value](x)
+
+------------------------------------------------------------------------------------------------------
+*args and **kwargs? 
+
+The syntax is the * and **. The names *args and **kwargs are only by convention but there's no hard requirement to use them.
+
+You would use *args when you're not sure how many arguments might be passed to your function, i.e. it allows you pass an arbitrary
+ number of arguments to your function. For example:
+
+>>> def print_everything(*args):
+        for count, thing in enumerate(args):
+...         print '{0}. {1}'.format(count, thing)
+...
+>>> print_everything('apple', 'banana', 'cabbage')
+0. apple
+1. banana
+2. cabbage
+Similarly, **kwargs allows you to handle named arguments that you have not defined in advance:
+
+>>> def table_things(**kwargs):
+...     for name, value in kwargs.items():
+...         print '{0} = {1}'.format(name, value)
+...
+>>> table_things(apple = 'fruit', cabbage = 'vegetable')
+cabbage = vegetable
+apple = fruit
+You can use these along with named arguments too. The explicit arguments get values first and then everything else is passed
+ to *args and **kwargs. The named arguments come first in the list. For example:
+
+def table_things(titlestring, **kwargs)
+You can also use both in the same function definition but *args must occur before **kwargs.
+
+You can also use the * and ** syntax when calling a function. For example:
+
+>>> def print_three_things(a, b, c):
+...     print 'a = {0}, b = {1}, c = {2}'.format(a,b,c)
+...
+>>> mylist = ['aardvark', 'baboon', 'cat']
+>>> print_three_things(*mylist)
+a = aardvark, b = baboon, c = cat
+As you can see in this case it takes the list (or tuple) of items and unpacks it. By this it matches them to the arguments in the function.
+ Of course, you could have a * both in the function definition and in the function call.
+
+
+One place where the use of *args and **kwargs is quite useful is for subclassing.
+
+class Foo(object):
+    def __init__(self, value1, value2):
+        # do something with the values
+        print value1, value2
+
+class MyFoo(Foo):
+    def __init__(self, *args, **kwargs):
+        # do something else, don't care about the args
+        print 'myfoo'
+        super(MyFoo, self).__init__(*args, **kwargs)
+This way you can extend the behaviour of the Foo class, without having to know too much about Foo. 
+This can be quite convenient if you are programming to an API which might change. MyFoo just passes all arguments to the Foo class.
+
+
+Here's an example that uses 3 different types of parameters.
+
+def func(required_arg, *args, **kwargs):
+    # required_arg is a positional-only parameter.
+    print required_arg
+
+    # args is a tuple of positional arguments,
+    # because the parameter name has * prepended.
+    if args: # If args is not empty.
+        print args
+
+    # kwargs is a dictionary of keyword arguments,
+    # because the parameter name has ** prepended.
+    if kwargs: # If kwargs is not empty.
+        print kwargs
+
+>>> func()
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+TypeError: func() takes at least 1 argument (0 given)
+
+>>> func("required argument")
+required argument
+
+>>> func("required argument", 1, 2, '3')
+required argument
+(1, 2, '3')
+
+>>> func("required argument", 1, 2, '3', keyword1=4, keyword2="foo")
+required argument
+(1, 2, '3')
+{'keyword2': 'foo', 'keyword1': 4}
+
+One case where *args and **kwargs are useful is when writing wrapper functions (such as decorators) that need to be able accept arbitrary arguments to pass through to the function being wrapped. For example, a simple decorator that prints the arguments and return value of the function being wrapped:
+
+def mydecorator( f ):
+   @functools.wraps( f )
+   def wrapper( *args, **kwargs ):
+      print "Calling f", args, kwargs
+      v = f( *args, **kwargs )
+      print "f returned", v
+      return v
+   return wrapper
+
+------------------------------------------------------------------------------------------------------
+
+Proper indentation for Python multiline strings ?
+
+def foo():
+    string = """line one
+             line two
+             line three"""
+Since the newlines and spaces are included in the string itself, you will have to postprocess it. If you don't want to do that and you have a whole lot of text, you might want to store it separately in a text file. If a text file does not work well for your application and you don't want to postprocess, I'd probably go with
+
+def foo():
+    string = ("this is an "
+              "implicitly joined "
+              "string")
+
+------------------------------------------------------------------------------------------------------
+
+How do you get the logical xor of two variables in Python?
+
+If you're already normalizing the inputs to booleans, then != is xor.
+
+bool(a) != bool(b)
+
+//
+
+Exclusive-or is already built-in to Python, in the operator module:
+
+from operator import xor
+xor(bool(a), bool(b))
+
+//
+
+xor = bool(a) ^ bool(b)
+Personally, I favor a slightly different dialect:
+
+xor = bool(a) + bool(b) == 1
+This dialect is inspired from a logical diagramming language I learned in school where "OR" was
+ denoted by a box containing =1 (greater than or equal to 1) and "XOR" was denoted by a box
+ containing =1.
+
+This has the advantage of correctly implementing exclusive or on multiple operands.
+
+"1 = a ^ b ^ c..." means the number of true operands is odd. This operator is "parity".
+"1 = a + b + c..." means exactly one operand is true. This is "exclusive or", 
+meaning "one to the exclusion of the others".
+
+-------------------------------------------------------------------------------------------------------
+
+Best practice for Python Assert ?
+
+Is
+
+assert x >= 0, 'x is less than zero'
+better or worse than
+
+if x < 0:
+    raise Exception, 'x is less than zero'
+
+===>>
+
+To be able to automatically throw an error when x become less than zero throughout the function. You can use class descriptors. Here is an example:
+
+class ZeroException(Exception):
+    pass
+
+class variable(object):
+    def __init__(self, value=0):
+        self.__x = value
+
+    def __set__(self, obj, value):
+        if value < 0:
+            raise ZeroException('x is less than zero')
+
+        self.__x  = value
+
+    def __get__(self, obj, objType):
+        return self.__x
+
+class MyClass(object):
+    x = variable()
+
+>>> m = MyClass()
+>>> m.x = 10
+>>> m.x -= 20
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "my.py", line 7, in __set__
+    raise ZeroException('x is less than zero')
+ZeroException: x is less than zero
+//
+
+Asserts should be used to test conditions that should never happen. The purpose is to crash early in the case of a corrupt program state.
+
+Exceptions should be used for errors that can conceivably happen, and you should almost always create your own Exception classes.
+
+------------------------------------------------------------------------------------------------------- 
+
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+
+ 
+
+
+
+
+Save plot to image file instead of displaying it using Matplotlib (so it can be used in batch scripts for example ?
+
+==>
+
+savefig('foo.png')
+savefig('foo.pdf')
+Will give a rasterized or vectorized output respectively, both which could be useful. In addition, you'll find that pylab leaves a generous, 
+often undesirable, whitespace around the image. Remove it with:
+
+savefig('foo.png', bbox_inches='tight')
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+Attempted relative import in non-package even with __init__.py ?
+
+Yes. You're not using it as a package.
+
+python -m pkg.tests.core_test
+
+I'm not either of the downvoters, but I feel this could use quite a bit more detail, given the popularity 
+of this question and answer. Noting stuff like from what directory to execute the above shell command, the fact 
+that you need __init__.pys all the way down, and the __package__-modifying trickery (described below by BrenBarn) needed 
+to allow these imports for executable scripts (e.g. when using a shebang and doing ./my_script.py at the Unix shell) would all 
+be useful. This whole issue was quite tricky for me to figure out or find concise and understandable documentation on
+
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+ 
+
+How to pip install packages according to requirements.txt from a local directory ?
+
+pip install -r /path/to/requirements.txt
+
+------------------------------------------------------------------------------------------------------- 
+
+Dynamic module import in Python ?
+
+>>> moduleNames = ['sys', 'os', 're', 'unittest'] 
+>>> moduleNames
+['sys', 'os', 're', 'unittest']
+>>> modules = map(__import__, moduleNames)
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+ 
+
+What is the standard Python docstring format ?
+
+def sq(n):
+    """
+    Returns the square of n. 
+    """
+    return n * n
+------------------------------------------------------------------------------------------------------- 
+
+Python's “is” operator behaves unexpectedly with integers ?
+
+>>> a = 256
+>>> b = 256
+>>> a is b
+True           # This is an expected result
+>>> a = 257
+>>> b = 257
+>>> a is b
+False          # What happened here? Why is this False?
+>>> 257 is 257
+True 
+
+===>
+
+>>> a = 256
+>>> b = 256
+>>> id(a)
+9987148
+>>> id(b)
+9987148
+>>> a = 257
+>>> b = 257
+>>> id(a)
+11662816
+>>> id(b)
+11662828
+------------------------------------------------------------------------------------------------------- 
+
+
+
+
+ 
+
+http://stackoverflow.com/questions/tagged/python?page=21&sort=votes&pagesize=15
+
+Python module for converting PDF to text ?
+
+===>
+
+pyPDF works fine (assuming that you're working with well-formed PDFs). If all you want is the text (with spaces), you can just do:
+
+import pyPdf
+pdf = pyPdf.PdfFileReader(open(filename, "rb"))
+for page in pdf.pages:
+    print page.extractText()
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+http://stackoverflow.com/questions/11522151/typical-angular-js-workflow-and-project-structure-with-python-flask
+
+------------------------------------------------------------------------------------------------------- 
+
+http://stackoverflow.com/questions/947810/how-to-save-a-python-interactive-session
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+
+²²²
+http://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
+²²²
+
+
+------------------------------------------------------------------------------------------------------- 
+Python style: multiple-line conditions in IFs ?
+
+if cond1 == 'val1' and \
+   cond2 == 'val2' and \
+   cond3 == 'val3' and \
+   cond4 == 'val4':
+    do_something
+
+//
+
+I've resorted to the following in the degenerate case where it's simply AND's or OR's.
+
+if all( [cond1 == 'val1', cond2 == 'val2', cond3 == 'val3', cond4 == 'val4'] ):
+
+if any( [cond1 == 'val1', cond2 == 'val2', cond3 == 'val3', cond4 == 'val4'] ):
+It shaves a few characters and makes it clear that there's no subtlety to the condition.
+
+//
+
+if (     cond1 == val1
+     and cond2 == val2
+     and cond3 == val3
+   ):
+    do_stuff()
+This makes each condition clearly visible. It also allows cleaner expression of more complex conditions:
+
+if (    cond1 == val1
+     or 
+        (     cond2_1 == val2_1
+          and cond2_2 >= val2_2
+          and cond2_3 != bad2_3
+        )
+   ):
+    do_more_stuff()
+------------------------------------------------------------------------------------------------------- 
+
+
+Python: user input and commandline arguments ?
+
+http://stackoverflow.com/questions/4087919/how-can-i-improve-my-paw-detection
+
+
+
+
+------------------------------------------------------------------------------------------------------- 
+Good PDF report generator tool for Python ?
+
+pod
+ReportLab Platypus 
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+LABYRINTHE
+http://stackoverflow.com/questions/12995434/representing-and-solving-a-maze-given-an-image
+
+------------------------------------------------------------------------------------------------------- 
+
+FONCTIONNEL
+
+http://stackoverflow.com/questions/1017621/why-isnt-python-very-good-for-functional-programming
+
+------------------------------------------------------------------------------------------------------- 
+
+How do you create a daemon in Python ?
+
+http://stackoverflow.com/questions/473620/how-do-you-create-a-daemon-in-python
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+http://stackoverflow.com/questions/3012488/what-is-the-python-with-statement-designed-for
+
+------------------------------------------------------------------------------------------------------- 
+http://stackoverflow.com/questions/tagged/python?page=26&sort=votes&pagesize=15
+
+What's the difference between eval, exec, and compile in Python ?
+
+------------------------------------------------------------------------------------------------------- 
+http://stackoverflow.com/questions/3584805/in-matplotlib-what-does-the-argument-mean-in-fig-add-subplot111
+In Matplotlib, what does the argument mean in fig.add_subplot(111) ?
+
+==>
+
+These are subplot grid parameters encoded as a single integer. For example, "111" means "1x1 grid, first subplot" and "234" means "2x3 grid, 4th subplot".
+
+Alternative form for add_subplot(111) is add_subplot(1, 1, 1).
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+
+
+
+http://stackoverflow.com/questions/tagged/python?page=27&sort=votes&pagesize=15
+
+What is the reason Python doesn't have switch statement?
+
+{'option1': function1,
+ 'option2': function2,
+ 'option3': function3,
+ 'option4': function4,
+}.get(value, defaultfunction)()
+
+
+defaultFunction will be called when value contains something other than the four options explicitly specified.
+
+Perhaps you can make a polymorphic call instead.
+
+Switch-statements are not an antipattern per se, but if you're coding object oriented you should consider if the use of a switch is better solved with polymorphism instead of using a switch statement.
+
+With polymorphism, this:
+
+foreach (var animal in zoo) {
+    switch (typeof(animal)) {
+        case "dog":
+            echo animal.bark();
+            break;
+
+        case "cat":
+            echo animal.meow();
+            break;
+    }
+}
+becomes this:
+
+foreach (var animal in zoo) {
+    echo animal.speak();
+}
+
+https://docs.python.org/2/faq/design.html#why-isn-t-there-a-switch-or-case-statement-in-python
+
+http://misko.hevery.com/2008/12/08/clean-code-talks-inheritance-polymorphism-testing/
+------------------------------------------------------------------------------------------------------- 
+
+How many Python classes should I put in one file ?
+
+A Python file is called a "module" and it's one way to organize your software so that it makes "sense".
+ Another is a directory, called a "package".
+
+A module is a distinct thing that may have one or two dozen closely-related classes. The trick is that a module
+ is something you'll import, and you need that import to be perfectly sensible to people who will read, maintain
+ and extend your software.
+
+The rule is this: a module is the unit of reuse.
+
+You can't easily reuse a single class. You should be able to reuse a module without any difficulties. Everything 
+in your library (and everything you download and add) is either a module or a package of modules.
+
+For example, you're working on something that reads spreadsheets, does some calculations and loads the results 
+into a database. What do you want your main program to look like?
+
+from ssReader import Reader
+from theCalcs import ACalc, AnotherCalc
+from theDB import Loader
+
+def main( sourceFileName ):
+    rdr= Reader( sourceFileName )
+    c1= ACalc( options )
+    c2= AnotherCalc( options )
+    ldr= Loader( parameters )
+    for myObj in rdr.readAll():
+        c1.thisOp( myObj )
+        c2.thatOp( myObj )
+        ldr.laod( myObj )
+Think of the import as the way to organize your code in concepts or chunks. 
+Exactly how many classes are in each import doesn't matter. What matters is the overall organization that you're portraying with your import statements.
+
+------------------------------------------------------------------------------------------------------- 
+
+
+
+
+
