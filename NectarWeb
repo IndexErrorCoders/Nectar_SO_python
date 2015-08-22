@@ -1,0 +1,197 @@
+
+How do I parse XML in Python ?
+
+
+minidom is the quickest and pretty straight forward:
+
+XML:
+
+<data>
+    <items>
+        <item name="item1"></item>
+        <item name="item2"></item>
+        <item name="item3"></item>
+        <item name="item4"></item>
+    </items>
+</data>
+PYTHON:
+
+from xml.dom import minidom
+xmldoc = minidom.parse('items.xml')
+itemlist = xmldoc.getElementsByTagName('item')
+print(len(itemlist))
+print(itemlist[0].attributes['name'].value)
+for s in itemlist:
+    print(s.attributes['name'].value)
+OUTPUT
+
+4
+item1
+item1
+item2
+item3
+item4
+------------------------------------------------------------------------------------------------------
+
+
+How do I download a file over HTTP using Python ?
+
+
+>>> import requests
+>>> 
+>>> url = "http://download.thinkbroadband.com/10MB.zip"
+>>> r = requests.get(url)
+>>> print len(r.content)
+10485760
+
+//
+import urllib2
+mp3file = urllib2.urlopen("http://www.example.com/songs/mp3.mp3")
+output = open('test.mp3','wb')
+output.write(mp3file.read())
+output.close()
+
+An improved version of the PabloG code for Python 2/3:
+
+from __future__ import ( division, absolute_import, print_function, unicode_literals )
+
+import sys, os, tempfile, logging
+
+if sys.version_info >= (3,):
+    import urllib.request as urllib2
+    import urllib.parse as urlparse
+else:
+    import urllib2
+    import urlparse
+
+def download_file(url, desc=None):
+    u = urllib2.urlopen(url)
+
+    scheme, netloc, path, query, fragment = urlparse.urlsplit(url)
+    filename = os.path.basename(path)
+    if not filename:
+        filename = 'downloaded.file'
+    if desc:
+        filename = os.path.join(desc, filename)
+
+    with open(filename, 'wb') as f:
+        meta = u.info()
+        meta_func = meta.getheaders if hasattr(meta, 'getheaders') else meta.get_all
+        meta_length = meta_func("Content-Length")
+        file_size = None
+        if meta_length:
+            file_size = int(meta_length[0])
+        print("Downloading: {0} Bytes: {1}".format(url, file_size))
+
+        file_size_dl = 0
+        block_sz = 8192
+        while True:
+            buffer = u.read(block_sz)
+            if not buffer:
+                break
+
+            file_size_dl += len(buffer)
+            f.write(buffer)
+
+            status = "{0:16}".format(file_size_dl)
+            if file_size:
+                status += "   [{0:6.2f}%]".format(file_size_dl * 100 / file_size)
+            status += chr(13)
+            print(status, end="")
+        print()
+
+    return filename
+
+url = "http://download.thinkbroadband.com/10MB.zip"
+filename = download_file(url)
+print(filename)
+
+//
+
+One more, using urlretrieve:
+
+import urllib
+urllib.urlretrieve ("http://www.example.com/songs/mp3.mp3", "mp3.mp3")
+Yet another one, with a "progressbar"
+
+import urllib2
+
+url = "http://download.thinkbroadband.com/10MB.zip"
+
+file_name = url.split('/')[-1]
+u = urllib2.urlopen(url)
+f = open(file_name, 'wb')
+meta = u.info()
+file_size = int(meta.getheaders("Content-Length")[0])
+print "Downloading: %s Bytes: %s" % (file_name, file_size)
+
+file_size_dl = 0
+block_sz = 8192
+while True:
+    buffer = u.read(block_sz)
+    if not buffer:
+        break
+
+    file_size_dl += len(buffer)
+    f.write(buffer)
+    status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+    status = status + chr(8)*(len(status)+1)
+    print status,
+
+f.close()
+
+------------------------------------------------------------------------------------------------------
+
+http://stackoverflow.com/questions/tagged/python?page=17&sort=votes&pagesize=15
+http://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+
+Finding local IP addresses using Python's stdlib ?
+How can I find local IP addresses (i.e. 192.168.x.x or 10.0.x.x) in Python platform independently 
+and using only the standard library?
+
+==>
+
+import socket
+socket.gethostbyname(socket.gethostname())
+
+//
+
+I just found this but it seems a bit hackish, however they say tried it on *nix and I did on windows and it worked.
+
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.connect(("gmail.com",80))
+print(s.getsockname()[0])
+s.close()
+
+//
+
+import socket
+print([ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][:1])
+
+//
+
+import socket
+print([(s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1])
+
+------------------------------------------------------------------------------------------------------- 
+
+What is the quickest way to HTTP GET in Python ?
+
+import urllib.request
+urllib.request.urlopen("http://example.com/foo/bar").read()
+
+//
+
+You could use a library called requests.
+
+import requests
+r = requests.get("http://example.com/foo/bar")
+This is quite easy. Then you can do like this:
+
+>>> print r.status_code
+>>> print r.headers
+>>> print r.content
+------------------------------------------------------------------------------------------------------- 
+
+
+
