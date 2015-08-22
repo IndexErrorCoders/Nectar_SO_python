@@ -1,0 +1,327 @@
+
+http://stackoverflow.com/questions/tagged/python?page=9&sort=votes&pagesize=15
+
+Python multithreading for dummies ?
+
+Here's a simple example: you need to try a few alternative URLs and return the contents of the first one to respond.
+
+import Queue
+import threading
+import urllib.request as urllib2
+
+# called by each thread
+def get_url(q, url):
+    q.put(urllib2.urlopen(url).read())
+
+theurls = ["http://google.com", "http://yahoo.com"]
+
+q = Queue.Queue()
+
+for u in theurls:
+    t = threading.Thread(target=get_url, args = (q,u))
+    t.daemon = True
+    t.start()
+
+s = q.get()
+print s
+
+
+//
+
+
+NOTE: For actual parallelization in Python, you should use the multiprocessing module to fork multiple processes that execute
+ in parallel (due to the global interpreter lock, Python threads provide interleaving but are in fact executed serially, not in parallel, 
+and are only useful when interleaving I/O operations).
+
+However, if you are merely looking for interleaving (or are doing I/O operations that can be parallelized despite the global interpreter lock),
+ then the threading module is the place to start. As a really simple example, let's consider the problem of summing a large range by summing subranges
+ in parallel:
+
+import threading
+
+class SummingThread(threading.Thread):
+     def __init__(self,low,high):
+         super(SummingThread, self).__init__()
+         self.low=low
+         self.high=high
+         self.total=0
+
+     def run(self):
+         for i in range(self.low,self.high):
+             self.total+=i
+
+
+thread1 = SummingThread(0,500000)
+thread2 = SummingThread(500000,1000000)
+thread1.start() # This actually causes the thread to run
+thread2.start()
+thread1.join()  # This waits until the thread has completed
+thread2.join()  
+# At this point, both threads have completed
+result = thread1.total + thread2.total
+print result
+Note that the above is a very stupid example, as it does absolutely no I/O and will be executed serially albeit interleaved 
+(with the added overhead of context switching) in CPython due to the global interpreter lock.
+
+------------------------------------------------------------------------------------------------------
+
+Is there any way to kill a Thread in Python ?
+
+import threading
+
+class StoppableThread(threading.Thread):
+    """Thread class with a stop() method. The thread itself has to check
+    regularly for the stopped() condition."""
+
+    def __init__(self):
+        super(StoppableThread, self).__init__()
+        self._stop = threading.Event()
+
+    def stop(self):
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.isSet()
+
+------------------------------------------------------------------------------------------------------
+
+Which Python memory profiler is recommended ?
+
+
+I want to know the memory usage of my Python application and specifically want to know what code blocks/portions or objects are consuming most memory
+
+Heapy is quite simple to use. At some point in your code, you have to write the following:
+
+from guppy import hpy
+h = hpy()
+print h.heap()
+This gives you some output like this:
+
+Partition of a set of 132527 objects. Total size = 8301532 bytes.
+Index  Count   %     Size   % Cumulative  % Kind (class / dict of class)
+0  35144  27  2140412  26   2140412  26 str
+1  38397  29  1309020  16   3449432  42 tuple
+2    530   0   739856   9   4189288  50 dict (no owner)
+You can also find out from where objects are referenced and get statistics about that, but somehow the docs on that are a bit sparse.
+
+There is a graphical browser as well, written in Tk.
+
+//
+
+Since nobody has mentioned it I'll point to my module memory_profiler which is capable of printing line-by-line report of memory usage and works on Unix and Windows (needs psutil on this last one). Output is not very detailed but the goal is to give you an overview of where the code is consuming more memory and not a exhaustive analysis on allocated objects.
+
+After decorating your function with @profile and running your code with the -m memory_profiler flag it will print a line-by-line report like this:
+
+Line #    Mem usage  Increment   Line Contents
+==============================================
+     3                           @profile
+     4      5.97 MB    0.00 MB   def my_func():
+     5     13.61 MB    7.64 MB       a = [1] * (10 ** 6)
+     6    166.20 MB  152.59 MB       b = [2] * (2 * 10 ** 7)
+     7     13.61 MB -152.59 MB       del b
+     8     13.61 MB    0.00 MB       return a
+
+------------------------------------------------------------------------------------------------------
+
+time.sleep — sleeps thread or process ?
+
+==> It blocks the thread. 
+
+import time
+from threading import Thread
+
+class worker(Thread):
+    def run(self):
+        for x in xrange(0,11):
+            print x
+            time.sleep(1)
+
+class waiter(Thread):
+    def run(self):
+        for x in xrange(100,103):
+            print x
+            time.sleep(5)
+
+def run():
+    worker().start()
+    waiter().start()
+Which will print:
+
+>>> thread_test.run()
+0
+100
+>>> 1
+2
+3
+4
+5
+101
+6
+7
+8
+9
+10
+102
+------------------------------------------------------------------------------------------------------- 
+
+
+Why is 'x' in ('x',) faster than 'x' == 'x' ?
+
+>>> timeit.timeit("'x' in ('x',)")
+0.04869917374131205
+>>> timeit.timeit("'x' == 'x'")
+0.06144205736110564
+
+http://stackoverflow.com/questions/28885132/why-is-x-in-x-faster-than-x-x
+-------------------------------------------------------------------------------------------------------
+
+Calling C/C++ from python ?
+
+
+I like ctypes a lot, swig always tended to give me problems. Also ctypes has the advantage that you don't need to satisfy any compile time dependency on python, and your binding will work on any python that has ctypes, not just the one it was compiled against.
+
+Suppose you have a simple C++ example class you want to talk to in a file called foo.cpp:
+
+#include <iostream>
+
+class Foo{
+    public:
+        void bar(){
+            std::cout << "Hello" << std::endl;
+        }
+};
+Since ctypes can only talk to C functions, you need to provide those declaring them as extern "C"
+
+extern "C" {
+    Foo* Foo_new(){ return new Foo(); }
+    void Foo_bar(Foo* foo){ foo->bar(); }
+}
+Next you have to compile this to a shared library
+
+g++ -c -fPIC foo.cpp -o foo.o
+g++ -shared -Wl,-soname,libfoo.so -o libfoo.so  foo.o
+And finally you have to write your python wrapper (e.g. in fooWrapper.py)
+
+from ctypes import cdll
+lib = cdll.LoadLibrary('./libfoo.so')
+
+class Foo(object):
+    def __init__(self):
+        self.obj = lib.Foo_new()
+
+    def bar(self):
+        lib.Foo_bar(self.obj)
+Once you have that you can call it like
+
+f = Foo()
+f.bar() #and you will see "Hello" on the screen
+
+------------------------------------------------------------------------------------------------------- 
+
+Multiprocessing vs Threading Python ?
+
+
+The difference is that threads run in the same memory space, while processes have separate memory. 
+This makes it a bit harder to share objects between processes with multiprocessing. Since threads use the same memory,
+ precautions have to be taken or two threads will write to the same memory at the same time. This is what the global interpreter lock is for.
+
+
+Multiprocessing
+
+Pros
+
+Separate memory space
+Code is usually straightforward
+Takes advantage of multiple CPUs & cores
+Avoids GIL limitations for cPython
+Eliminates most needs for synchronization primitives unless if you use shared memory (instead, it's more of a communication model for IPC)
+Child processes are interruptible/killable
+Python multiprocessing module includes useful abstractions with an interface much like threading.Thread
+A must with cPython for CPU-bound processing
+Cons
+
+IPC a little more complicated with more overhead (communication model vs. shared memory/objects)
+Larger memory footprint
+Threading
+
+Pros
+
+Lightweight - low memory footprint
+Shared memory - makes access to state from another context easier
+Allows you to easily make responsive UIs
+cPython C extension modules that properly release the GIL will run in parallel
+Great option for I/O-bound applications
+Cons
+
+cPython - subject to the GIL
+Not interruptible/killable
+If not following a command queue/message pump model (using the Queue module), then manual use of synchronization primitives become a necessity
+ (decisions are needed for the granularity of locking)
+Code is usually harder to understand and to get right - the potential for race conditions increases dramatically
+
+------------------------------------------------------------------------------------------------------- 
+
+What is memoization and how can I use it in Python ?
+
+Memoization effectively refers to remembering ("memoization" -> "memorandum" -> to be remembered) results of method calls based on the method inputs and then returning the remembered result rather than computing the result again. You can think of it as a cache for method results. For further details, see page 365 of Cormen et al., Introduction To Algorithms (3e).
+
+A simple example for computing factorials using memoization in Python would be something like this:
+
+factorial_memo = {}
+def factorial(k):
+    if k < 2: return 1
+    if not k in factorial_memo:
+        factorial_memo[k] = k * factorial(k-1)
+    return factorial_memo[k]
+You can get more complicated and encapsulate the memoization process into a class
+
+class Memoize:
+    def __init__(self, f):
+        self.f = f
+        self.memo = {}
+    def __call__(self, *args):
+        if not args in self.memo:
+            self.memo[args] = self.f(*args)
+        return self.memo[args]
+Then:
+
+def factorial(k):
+    if k < 2: return 1
+    return k * factorial(k - 1)
+
+factorial = Memoize(factorial)
+
+//
+
+New to Python 3.2 is functools.lru_cache. By default, it only caches the 128 most recently used calls, but you can set the maxsize to None to indicate that the cache should never expire:
+
+import functools
+
+@functools.lru_cache(maxsize=None)
+def fib(num):
+    # ...
+
+//
+
+The other answers cover what it is quite well. I'm not repeating that. Just some points that might be useful to you.
+
+Usually, memoisation is an operation you can apply on any function that computes something (expensive) and returns a value. Because of this, it's often implemented as a decorator. The implementation is straightforward and it would be something like this
+
+memoised_function = memoise(actual_function)
+or expressed as a decorator
+
+@memoise
+def actual_function(arg1, arg2):
+   #body
+
+------------------------------------------------------------------------------------------------------- 
+
+How to find out the number of CPUs using python ?
+
+If you have python2.6 or python3.4 you can simply use
+
+import multiprocessing
+
+multiprocessing.cpu_count()
+
+------------------------------------------------------------------------------------------------------- 
